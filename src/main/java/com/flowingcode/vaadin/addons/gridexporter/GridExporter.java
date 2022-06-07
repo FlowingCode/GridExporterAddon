@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Calendar;
@@ -43,7 +44,8 @@ import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.server.StreamResource;
 
-public class GridExporter<T> {
+@SuppressWarnings("serial")
+public class GridExporter<T> implements Serializable {
 
 	private final static Logger LOGGER = LoggerFactory.getLogger(GridExporter.class);
 
