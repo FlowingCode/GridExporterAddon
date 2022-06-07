@@ -18,7 +18,7 @@
  * #L%
  */
 
-package com.flowingcode.vaadin.addons.template.it;
+package com.flowingcode.vaadin.addons.gridexporter.it;
 
 import com.vaadin.testbench.ScreenshotOnFailureRule;
 import com.vaadin.testbench.TestBench;

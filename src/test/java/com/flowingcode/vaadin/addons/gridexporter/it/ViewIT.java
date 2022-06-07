@@ -18,7 +18,7 @@
  * #L%
  */
 
-package com.flowingcode.vaadin.addons.template.it;
+package com.flowingcode.vaadin.addons.gridexporter.it;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;

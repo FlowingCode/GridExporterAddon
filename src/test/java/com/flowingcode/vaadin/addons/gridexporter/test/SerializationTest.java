@@ -17,14 +17,15 @@
  * limitations under the License.
  * #L%
  */
-package com.flowingcode.vaadin.addons.template.test;
+package com.flowingcode.vaadin.addons.gridexporter.test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import com.flowingcode.vaadin.addons.template.TemplateAddon;
+import com.flowingcode.vaadin.addons.gridexporter.GridExporter;
+import com.vaadin.flow.component.grid.Grid;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -44,7 +45,8 @@ public class SerializationTest {
   @Test
   public void testSerialization() throws ClassNotFoundException, IOException {
     try {
-      testSerializationOf(new TemplateAddon());
+      Grid<String> grid = new Grid<>();
+      testSerializationOf(GridExporter.createFor(grid));
     } catch (Exception e) {
       Assert.fail("Problem while testing serialization: " + e.getMessage());
     }

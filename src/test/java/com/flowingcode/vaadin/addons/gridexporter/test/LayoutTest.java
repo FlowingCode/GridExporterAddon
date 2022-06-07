@@ -1,8 +1,8 @@
 /*-
  * #%L
- * Template Add-on
+ * App Layout Addon
  * %%
- * Copyright (C) 2021 Flowing Code
+ * Copyright (C) 2018 - 2020 Flowing Code
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,22 @@
  * limitations under the License.
  * #L%
  */
-package com.flowingcode.vaadin.addons.template;
+package com.flowingcode.vaadin.addons.gridexporter.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import com.flowingcode.vaadin.addons.DemoLayout;
-import com.flowingcode.vaadin.addons.GithubLink;
-import com.flowingcode.vaadin.addons.demo.TabbedDemo;
+import com.flowingcode.vaadin.addons.gridexporter.GridExporterDemoView;
 import com.vaadin.flow.router.Route;
+import org.junit.Test;
 
-@SuppressWarnings("serial")
-@Route(value = "template", layout = DemoLayout.class)
-@GithubLink("https://github.com/FlowingCode/AddonStarter23")
-public class TemplateDemoView extends TabbedDemo {
+public class LayoutTest {
 
-  public TemplateDemoView() {
-    addDemo(TemplateDemo.class);
-    setSizeFull();
+  @Test
+  public void testDemoLayout() {
+    Route route = GridExporterDemoView.class.getAnnotation(Route.class);
+    assertEquals("com.flowingcode.vaadin.addons.DemoLayout", DemoLayout.class.getName());
+    assertEquals(DemoLayout.class, route.layout());
+    assertNotEquals("", route.value());
   }
 }
