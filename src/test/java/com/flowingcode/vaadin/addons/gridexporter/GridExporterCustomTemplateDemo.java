@@ -4,30 +4,31 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import org.apache.poi.EncryptedDocumentException;
-
 import com.flowingcode.vaadin.addons.demo.DemoSource;
 import com.github.javafaker.Faker;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.data.provider.DataProvider;
+import com.vaadin.flow.data.renderer.LitRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
 @DemoSource
-@PageTitle("Grid Exporter Addon Basic Demo")
-@Route(value = "gridexporter/basic", layout = GridExporterDemoView.class)
+@PageTitle("Grid Exporter Addon Custom Templates Demo")
+@Route(value = "gridexporter/custom", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
-public class GridExporterDemo extends Div {
+public class GridExporterCustomTemplateDemo extends Div {
 
-  public GridExporterDemo() throws EncryptedDocumentException, IOException {
+  public GridExporterCustomTemplateDemo() throws EncryptedDocumentException, IOException {
     Grid<Person> grid = new Grid<>(Person.class);
     grid.removeAllColumns();
-    grid.addColumn("name").setHeader("Name");
+    grid.addColumn(LitRenderer
+        .<Person>of("<b>${item.name}</b>").withProperty("name", Person::getName)).setHeader("Name");
     grid.addColumn("lastName").setHeader("Last Name");
     Column<Person> c = grid.addColumn(item->"$" + item.getBudget()).setHeader("Budget");
     BigDecimal[] total = new BigDecimal[1];
@@ -43,8 +44,12 @@ public class GridExporterDemo extends Div {
     grid.setItems(DataProvider.fromStream(stream));
     grid.setWidthFull();
     this.setSizeFull();
-    GridExporter<Person> exporter = GridExporter.createFor(grid);
-    exporter.setExportValue(c, item->""+item.getBudget());
+    GridExporter<Person> exporter = GridExporter.createFor(grid, "/custom-template.xlsx", "/custom-template.docx");
+    HashMap<String,String> placeholders = new HashMap<>();
+    placeholders.put("${date}", new SimpleDateFormat().format(Calendar.getInstance().getTime()));
+    exporter.setAdditionalPlaceHolders(placeholders);
+    exporter.setSheetNumber(1);
+    exporter.setCsvExportEnabled(false);
     exporter.setTitle("People information");
     exporter.setFileName("GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
     add(grid);

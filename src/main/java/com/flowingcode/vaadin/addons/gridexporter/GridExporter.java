@@ -1,356 +1,279 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.apache.poi.EncryptedDocumentException;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.apache.poi.ss.util.CellAddress;
-import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.flowingcode.vaadin.addons.fontawesome.FontAwesome;
+import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
+import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.grid.ColumnPathRenderer;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Anchor;
-import com.vaadin.flow.data.binder.BeanPropertySet;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.binder.PropertyDefinition;
 import com.vaadin.flow.data.binder.PropertySet;
-import com.vaadin.flow.data.provider.DataCommunicator;
-import com.vaadin.flow.data.provider.DataProvider;
-import com.vaadin.flow.data.provider.Query;
-import com.vaadin.flow.data.renderer.Renderer;
-import com.vaadin.flow.dom.Element;
+import com.vaadin.flow.data.renderer.LitRenderer;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.server.StreamResource;
 
 @SuppressWarnings("serial")
 public class GridExporter<T> implements Serializable {
 
-	private final static Logger LOGGER = LoggerFactory.getLogger(GridExporter.class);
+  private final static Logger LOGGER = LoggerFactory.getLogger(ExcelInputStreamFactory.class);
 
-	private Grid<T> grid;
-	
-	private String titlePlaceHolder = "${title}";
-	private String headersPlaceHolder = "${headers}";
-	private String dataPlaceHolder = "${data}";
-	private String footersPlaceHolder = "${footers}";
-	
-    private Collection<Grid.Column<T>> columns;
-    private PropertySet<T> propertySet;
-	
-	private Map<String,String> additionalPlaceHolders = new HashMap<>();
-	
-	private String title = "Grid Export";
-	
-	private String fileName = "export";
-	
-	private int sheetNumber = 0;
-	
-	private boolean autoAttachExportButtons = true;
-	
-	private boolean autoMergeTitle = true;
-	
-	private GridExporter(Grid<T> grid) {
-		this.grid = grid;
-	}
+  private boolean excelExportEnabled = true;
+  private boolean docxExportEnabled = true;
+  private boolean csvExportEnabled = true;
+  
+  static final String COLUMN_VALUE_PROVIDER_DATA = "column-value-provider-data";
+  static final String COLUMN_EXPORTED_PROVIDER_DATA = "column-value-exported-data";
 
-	public static <T> GridExporter<T> createFor(Grid<T> grid) {
-		GridExporter<T> exporter = new GridExporter<>(grid);
-		grid.getElement().addAttachListener(ev->{
-			Element gridElement = ev.getSource();
-			Element parent = gridElement.getParent();
-			int gridPosition = parent.indexOfChild(gridElement);
-		    Anchor link = new Anchor("",FontAwesome.Solid.FILE_EXCEL.create());
-		    link.setHref(exporter.getExcelStreamResource());
-			parent.insertChild(gridPosition+1, link.getElement());
-		    link.getElement().setAttribute("download", true);
-		});
-		return exporter;
-	}
-	
-	public StreamResource getExcelStreamResource() {
-		return new StreamResource(fileName + ".xlsx", () -> {
-			PipedInputStream in = new PipedInputStream();
-			try {
-				this.columns = grid.getColumns().stream().filter(this::isExportable).collect(Collectors.toList());
-				Workbook wb = getWorkbook();
-				Sheet sheet = wb.getSheetAt(sheetNumber);
+  Grid<T> grid;
 
-				Cell titleCell = findCellWithPlaceHolder(sheet,titlePlaceHolder);
-				titleCell.setCellValue(title);
-				
-				Cell cell = findCellWithPlaceHolder(sheet,headersPlaceHolder);
-				List<String> headers = getGridHeaders(grid);
-				fillHeaderOrFooter(sheet,cell,headers);
-				if (this.isAutoMergeTitle()) {
-					sheet.addMergedRegion(new CellRangeAddress(titleCell.getRowIndex(),titleCell.getRowIndex(), titleCell.getColumnIndex(), titleCell.getColumnIndex() + headers.size() - 1));
-				}
-				
-				cell = findCellWithPlaceHolder(sheet,dataPlaceHolder);
-				fillData(sheet, cell, grid.getDataProvider());
+  String titlePlaceHolder = "${title}";
+  String headersPlaceHolder = "${headers}";
+  String dataPlaceHolder = "${data}";
+  String footersPlaceHolder = "${footers}";
 
-				cell = findCellWithPlaceHolder(sheet,footersPlaceHolder);
-				List<String> footers = getGridFooters(grid);
-				fillHeaderOrFooter(sheet, cell, footers);
-				
-				getAdditionalPlaceHolders().entrySet().forEach(entry->{
-					Cell cellwp = findCellWithPlaceHolder(sheet,entry.getKey());
-					cellwp.setCellValue(entry.getValue());
-				});
+  Collection<Grid.Column<T>> columns;
+  PropertySet<T> propertySet;
 
-				final PipedOutputStream out = new PipedOutputStream(in);
-				new Thread(new Runnable() {
-					public void run() {
-						try {
-							wb.write(out);
-						} catch (IOException e) {
-							LOGGER.error("Problem generating export", e);
-						} finally {
-							if (out != null) {
-								try {
-									out.close();
-								} catch (IOException e) {
-									LOGGER.error("Problem generating export", e);
-								}
-							}
-						}
-					}
-				}).start();
-			} catch (IOException e) {
-				LOGGER.error("Problem generating export", e);
-			}
-			return in;
-		});
-	}
+  Map<String, String> additionalPlaceHolders = new HashMap<>();
 
-	@SuppressWarnings("unchecked")
-	private void fillData(Sheet sheet, Cell dataCell, DataProvider<T, ?> dataProvider) {
-        Object filter = null;
-        try {
-            Method method = DataCommunicator.class.getDeclaredMethod("getFilter");
-            method.setAccessible(true);
-            filter = method.invoke(grid.getDataCommunicator());
-        } catch (Exception e) {
-            LOGGER.error("Unable to get filter from DataCommunicator");
+  String title = "Grid Export";
+
+  String fileName = "export";
+
+  int sheetNumber = 0;
+
+  boolean autoAttachExportButtons = true;
+
+  boolean autoMergeTitle = true;
+
+  public int totalcells = 0;
+
+  private GridExporter(Grid<T> grid) {
+    this.grid = grid;
+  }
+
+  public static <T> GridExporter<T> createFor(Grid<T> grid) {
+    return createFor(grid, null, null);
+  }
+
+  public static <T> GridExporter<T> createFor(Grid<T> grid, String excelCustomTemplate,
+      String docxCustomTemplate) {
+    GridExporter<T> exporter = new GridExporter<>(grid);
+    grid.getElement().addAttachListener(ev -> {
+      if (exporter.autoAttachExportButtons) {
+        HorizontalLayout hl = new HorizontalLayout();
+        if (exporter.isExcelExportEnabled()) {
+          Anchor excelLink = new Anchor("", FontAwesome.Regular.FILE_EXCEL.create());
+          excelLink.setHref(exporter.getExcelStreamResource(excelCustomTemplate));
+          excelLink.getElement().setAttribute("download", true);
+          hl.add(excelLink);
         }
-
-        @SuppressWarnings("rawtypes")
-		Query<T,?> streamQuery = new Query<>(0, grid.getDataProvider().size(new Query(filter)), grid.getDataCommunicator().getBackEndSorting(),
-                grid.getDataCommunicator().getInMemorySorting(), null);
-        Stream<T> dataStream = getDataStream(streamQuery);
-
-        boolean[] notFirstRow = new boolean[1];
-    	Cell[] startingCell = new Cell[1];
-    	startingCell[0] = dataCell;
-        dataStream.forEach(t -> {
-        	if(notFirstRow[0]) {
-        		CellStyle cellStyle = startingCell[0].getCellStyle();
-        		int lastRow = sheet.getLastRowNum(); 
-        		sheet.shiftRows(startingCell[0].getRowIndex()+1, lastRow, 1);
-        		Row newRow = sheet.createRow(startingCell[0].getRowIndex()+1);
-        		startingCell[0] = newRow.createCell(startingCell[0].getColumnIndex());
-        		startingCell[0].setCellStyle(cellStyle);
-        	}
-            buildRow(t, sheet, startingCell[0]);
-            notFirstRow[0]=true;
-        });		
-		
-	}
-    
+        if (exporter.isDocxExportEnabled()) {
+          Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_WORD.create());
+          docLink.setHref(exporter.getDocxStreamResource(docxCustomTemplate));
+          docLink.getElement().setAttribute("download", true);
+          hl.add(docLink);
+        }
+        if (exporter.isCsvExportEnabled()) {
+          Anchor csvLink = new Anchor("", FontAwesome.Regular.FILE_LINES.create());
+          csvLink.setHref(exporter.getCsvStreamResource());
+          csvLink.getElement().setAttribute("download", true);
+          hl.add(csvLink);
+        }
+        hl.setSizeFull();
+        hl.setJustifyContentMode(JustifyContentMode.END);
+        GridHelper.addToolbarFooter(grid, hl);
+      }
+    });
+    return exporter;
+  }
+  
+  Object extractValueFromColumn(T item, Column<T> column) {
+    Object value = null;
+    // first check if therer is a value provider for the current column
     @SuppressWarnings("unchecked")
-	private void buildRow(T item,Sheet sheet, Cell startingCell) {
-        if (propertySet == null) {
-            propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
-            columns = columns.stream().filter(this::isExportable).collect(Collectors.toList());
-        }
-        if (columns.isEmpty())
-        	throw new IllegalStateException("Grid has no columns");
-
-        int[] currentColumn = new int[1];
-        currentColumn[0] = startingCell.getColumnIndex();
-        columns.forEach(column -> {
-        	Object value = null;
-        	if (column.getKey()!=null) {
-                Optional<PropertyDefinition<T, ?>> propertyDefinition = propertySet.getProperty(column.getKey());
-                if (propertyDefinition.isPresent()) {
-                	value = propertyDefinition.get().getGetter().apply(item);
-                } else {
-                    throw new IllegalStateException("Column key: " + column.getKey() + " is a property which cannot be found");
-                }
-        	} else {
-        		Renderer<T> r = column.getRenderer();
-        		try {
-					Field ivps = Renderer.class.getDeclaredField("valueProviders");
-					ivps.setAccessible(true);
-					Map<String, ValueProvider<T, ?>> vps = (Map<String, ValueProvider<T, ?>>) ivps.get(r);
-					
-					Field ciid = Column.class.getDeclaredField("columnInternalId");
-					ciid.setAccessible(true);
-					String cid = (String) ciid.get(column);
-					
-					value = vps.get(cid).apply(item);
-				} catch (NoSuchFieldException e) {
-					e.printStackTrace();
-				} catch (SecurityException e) {
-					e.printStackTrace();
-				} catch (IllegalArgumentException e) {
-					e.printStackTrace();
-				} catch (IllegalAccessException e) {
-					e.printStackTrace();
-				}
-        	}
-        	Cell currentCell = startingCell;
-        	if (startingCell.getColumnIndex()<currentColumn[0]) {
-        		currentCell = startingCell.getRow().createCell(currentColumn[0]);
-        		currentCell.setCellStyle(startingCell.getCellStyle());
-        	}
-    		currentColumn[0] = currentColumn[0] + 1;
-            buildCell(value, currentCell);
-
-        });
+    ValueProvider<T,String> customVP = (ValueProvider<T, String>) ComponentUtil.getData(column, GridExporter.COLUMN_VALUE_PROVIDER_DATA);
+    if (customVP!=null) {
+      value = customVP.apply(item);
+    }
+          
+    // if there is a key, assume that the property can be retrieved from it
+    if (value==null && column.getKey() != null) {
+      Optional<PropertyDefinition<T, ?>> propertyDefinition =
+          this.propertySet.getProperty(column.getKey());
+      if (propertyDefinition.isPresent()) {
+        value = propertyDefinition.get().getGetter().apply(item);
+      } else {
+        LOGGER.warn("Column key: " + column.getKey() + " is a property which cannot be found");
+      }
+    }
+    // at this point if the value is still null then take the only value from ColumPathRenderer VP
+    if (value==null && column.getRenderer() instanceof ColumnPathRenderer) {
+      ColumnPathRenderer<T> r = (ColumnPathRenderer<T>) column.getRenderer();
+      value = r.getValueProviders().values().iterator().next().apply(item);
     }
     
-    private void buildCell(Object value, Cell cell) {
-        if (value == null) {
-        	cell.setBlank();
-        } else if (value instanceof Boolean) {
-            cell.setCellValue((Boolean) value);
-        } else if (value instanceof Calendar) {
-            Calendar calendar = (Calendar) value;
-            cell.setCellValue(calendar.getTime());
-        } else if (value instanceof Double) {
-            cell.setCellValue((Double) value);
-        } else {
-            cell.setCellValue(value.toString());
-        }
-	}
-
-	private boolean isExportable(Grid.Column<T> column) {
-        return column.isVisible() /*&& column.getKey() != null && !column.getKey().isEmpty()
-                && (propertySet == null || propertySet.getProperty(column.getKey()).isPresent())*/;
+    // if the value still couldn't be retrieved then if the renderer is a LitRenderer, take the value only
+    // if there is one value provider
+    if (value==null && column.getRenderer() instanceof LitRenderer) {
+      LitRenderer<T> r = (LitRenderer<T>) column.getRenderer();
+      if (r.getValueProviders().values().size()==1) {
+        value = r.getValueProviders().values().iterator().next().apply(item);
+      }
     }
-	
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private Stream<T> getDataStream(Query newQuery) {
-        Stream<T> stream = grid.getDataProvider().fetch(newQuery);
-        if (stream.isParallel()) {
-            LoggerFactory.getLogger(DataCommunicator.class)
-                    .debug("Data provider {} has returned "
-                                    + "parallel stream on 'fetch' call",
-                            grid.getDataProvider().getClass());
-            stream = stream.collect(Collectors.toList()).stream();
-            assert !stream.isParallel();
-        }
-        return stream;
+    
+    if (value==null) {
+      throw new IllegalStateException("It's not possible to obtain a value for column, please set a value provider by calling setExportValue()");
     }
+    return value;
+  }
 
-	private void fillHeaderOrFooter(Sheet sheet, Cell headersCell, List<String> headers) {
-		CellStyle style = headersCell.getCellStyle();
-		sheet.setActiveCell(headersCell.getAddress());
-		headers.forEach(header->{
-			Cell cell = sheet.getRow(sheet.getActiveCell().getRow()).getCell(sheet.getActiveCell().getColumn());
-			if (cell==null) {
-				cell = sheet.getRow(sheet.getActiveCell().getRow()).createCell(sheet.getActiveCell().getColumn());
-				cell.setCellStyle(style);
-			}
-			cell.setCellValue(header);
-			sheet.setActiveCell(new CellAddress(sheet.getActiveCell().getRow(),sheet.getActiveCell().getColumn() + 1));
-		});
-	}
+  public StreamResource getDocxStreamResource() {
+    return getDocxStreamResource(null);
+  }
 
-	private List<String> getGridHeaders(Grid<T> grid) {
-		return grid.getColumns().stream().map(column->GridUtils.getHeader(column)).collect(Collectors.toList());
-	}
+  public StreamResource getDocxStreamResource(String template) {
+    return new StreamResource(fileName + ".docx", new DocxInputStreamFactory<>(this, template));
+  }
 
-	private List<String> getGridFooters(Grid<T> grid) {
-		return grid.getColumns().stream().map(column->GridUtils.getFooter(column)).collect(Collectors.toList());
-	}
+  public StreamResource getCsvStreamResource() {
+    return new StreamResource(fileName + ".csv", new CsvInputStreamFactory<>(this));
+  }
 
-	private Cell findCellWithPlaceHolder(Sheet sheet, String placeholder) {
-	    for (Row row : sheet) {
-	        for (Cell cell : row) {
-	            if (cell.getCellType() == CellType.STRING) {
-	                if (cell.getRichStringCellValue().getString().trim().equals(placeholder)) {
-	                    return cell;
-	                }
-	            }
-	        }
-	    }               
-	    return null;
-	}
+  public StreamResource getExcelStreamResource() {
+    return getExcelStreamResource(null);
+  }
 
-	private Workbook getWorkbook() throws EncryptedDocumentException, IOException {
-		InputStream inp = this.getClass().getResourceAsStream("/template.xlsx");
-		return WorkbookFactory.create(inp);
-	}
+  public StreamResource getExcelStreamResource(String template) {
+    return new StreamResource(fileName + ".xlsx", new ExcelInputStreamFactory<>(this, template));
+  }
 
-	public String getTitle() {
-		return title;
-	}
+  public String getTitle() {
+    return title;
+  }
 
-	public void setTitle(String title) {
-		this.title = title;
-	}
+  /**
+   * Sets the title of the exported file
+   * @param title
+   */
+  public void setTitle(String title) {
+    this.title = title;
+  }
 
-	public String getFileName() {
-		return fileName;
-	}
+  public String getFileName() {
+    return fileName;
+  }
 
-	public void setFileName(String fileName) {
-		this.fileName = fileName;
-	}
+  /**
+   * Sets the filename of the exported file
+   * @param fileName
+   */
+  public void setFileName(String fileName) {
+    this.fileName = fileName;
+  }
 
-	public boolean isAutoAttachExportButtons() {
-		return autoAttachExportButtons;
-	}
+  public boolean isAutoAttachExportButtons() {
+    return autoAttachExportButtons;
+  }
 
-	public void setAutoAttachExportButtons(boolean autoAttachExportButtons) {
-		this.autoAttachExportButtons = autoAttachExportButtons;
-	}
+  /**
+   * If true, it will automatically generate export buttons in the asociated grid
+   * @param autoAttachExportButtons
+   */
+  public void setAutoAttachExportButtons(boolean autoAttachExportButtons) {
+    this.autoAttachExportButtons = autoAttachExportButtons;
+  }
 
-	public Map<String,String> getAdditionalPlaceHolders() {
-		return additionalPlaceHolders;
-	}
+  public Map<String, String> getAdditionalPlaceHolders() {
+    return additionalPlaceHolders;
+  }
 
-	public void setAdditionalPlaceHolders(Map<String,String> additionalPlaceHolders) {
-		this.additionalPlaceHolders = additionalPlaceHolders;
-	}
+  /**
+   * Sets a map that will contain additional place holders that will be replaced with values
+   * when processing the exported file
+   * @param additionalPlaceHolders
+   */
+  public void setAdditionalPlaceHolders(Map<String, String> additionalPlaceHolders) {
+    this.additionalPlaceHolders = additionalPlaceHolders;
+  }
 
-	public int getSheetNumber() {
-		return sheetNumber;
-	}
+  public int getSheetNumber() {
+    return sheetNumber;
+  }
 
-	public void setSheetNumber(int sheetNumber) {
-		this.sheetNumber = sheetNumber;
-	}
+  /**
+   * Configures the excel sheet that will be inspected for placeholders to export the data
+   * @param sheetNumber
+   */
+  public void setSheetNumber(int sheetNumber) {
+    this.sheetNumber = sheetNumber;
+  }
 
-	public boolean isAutoMergeTitle() {
-		return autoMergeTitle;
-	}
+  public boolean isAutoMergeTitle() {
+    return autoMergeTitle;
+  }
 
-	public void setAutoMergeTitle(boolean autoMergeTitle) {
-		this.autoMergeTitle = autoMergeTitle;
-	}
+  /**
+   * If true the title cell will be merged with the next ones to create a single title cell
+   * that will span across the columns
+   * @param autoMergeTitle
+   */
+  public void setAutoMergeTitle(boolean autoMergeTitle) {
+    this.autoMergeTitle = autoMergeTitle;
+  }
+
+  public boolean isExcelExportEnabled() {
+    return excelExportEnabled;
+  }
+
+  public void setExcelExportEnabled(boolean excelExportEnabled) {
+    this.excelExportEnabled = excelExportEnabled;
+  }
+
+  public boolean isDocxExportEnabled() {
+    return docxExportEnabled;
+  }
+
+  public void setDocxExportEnabled(boolean docxExportEnabled) {
+    this.docxExportEnabled = docxExportEnabled;
+  }
+
+  public boolean isCsvExportEnabled() {
+    return csvExportEnabled;
+  }
+
+  public void setCsvExportEnabled(boolean csvExportEnabled) {
+    this.csvExportEnabled = csvExportEnabled;
+  }
+
+  /**
+   * Configure a value provider for a given column. If there is a value provider,
+   * that will be taken into account when exporting the column
+   * @param column
+   * @param vp
+   */
+  public void setExportValue(Column<T> column, ValueProvider<T, String> vp) {
+    ComponentUtil.setData(column, COLUMN_VALUE_PROVIDER_DATA, vp);
+  }
+  
+  /**
+   * Configure if the column is exported or not
+   * @param column
+   * @param export: true will be included in the exported file, false will not be included
+   */
+  public void setExportColumn(Column<T> column, boolean export) {
+    ComponentUtil.setData(column, COLUMN_EXPORTED_PROVIDER_DATA, export);
+  }
+  
 
 }

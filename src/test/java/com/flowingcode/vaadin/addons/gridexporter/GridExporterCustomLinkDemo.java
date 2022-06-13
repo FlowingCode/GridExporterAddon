@@ -6,25 +6,24 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import org.apache.poi.EncryptedDocumentException;
-
 import com.flowingcode.vaadin.addons.demo.DemoSource;
 import com.github.javafaker.Faker;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
 @DemoSource
-@PageTitle("Grid Exporter Addon Basic Demo")
-@Route(value = "gridexporter/basic", layout = GridExporterDemoView.class)
+@PageTitle("Grid Exporter Addon Custom Link Demo")
+@Route(value = "gridexporter/custom-link", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
-public class GridExporterDemo extends Div {
+public class GridExporterCustomLinkDemo extends Div {
 
-  public GridExporterDemo() throws EncryptedDocumentException, IOException {
+  public GridExporterCustomLinkDemo() throws EncryptedDocumentException, IOException {
     Grid<Person> grid = new Grid<>(Person.class);
     grid.removeAllColumns();
     grid.addColumn("name").setHeader("Name");
@@ -44,9 +43,12 @@ public class GridExporterDemo extends Div {
     grid.setWidthFull();
     this.setSizeFull();
     GridExporter<Person> exporter = GridExporter.createFor(grid);
-    exporter.setExportValue(c, item->""+item.getBudget());
+    exporter.setAutoAttachExportButtons(false);
     exporter.setTitle("People information");
     exporter.setFileName("GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
-    add(grid);
+    Anchor excelLink = new Anchor("", "Export to Excel");
+    excelLink.setHref(exporter.getExcelStreamResource());
+    excelLink.getElement().setAttribute("download", true);
+    add(grid, excelLink);
   }
 }

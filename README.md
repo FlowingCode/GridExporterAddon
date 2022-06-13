@@ -1,22 +1,24 @@
-[![Published on Vaadin Directory](https://img.shields.io/badge/Vaadin%20Directory-published-00b4f0.svg)](https://vaadin.com/directory/component/template-addon)
-[![Stars on vaadin.com/directory](https://img.shields.io/vaadin-directory/star/app-layout-addon.svg)](https://vaadin.com/directory/component/template-addon)
-[![Build Status](https://jenkins.flowingcode.com/job/template-addon/badge/icon)](https://jenkins.flowingcode.com/job/template-addon)
+[![Published on Vaadin Directory](https://img.shields.io/badge/Vaadin%20Directory-published-00b4f0.svg)](https://vaadin.com/directory/component/grid-exporter-addon)
+[![Stars on vaadin.com/directory](https://img.shields.io/vaadin-directory/star/grid-exporter-addon.svg)](https://vaadin.com/directory/component/grid-exporter-addon)
+[![Build Status](https://jenkins.flowingcode.com/job/grid-exporter-addon/badge/icon)](https://jenkins.flowingcode.com/job/grid-exporter-addon)
 
-# Template Add-on
+# Grid Exporter Add-on
 
-This is a template project for building new Vaadin 23 addons
+This is an addon that allows to export Vaadin's grid data to some formats like Excel, Docx and CSV.
 
 ## Features
 
-* List the features of your addon in here
+* Can configure which columns to export
+* Other templates can be used besides the basic templates
+* Optionally can create the export buttons automatically (default)
 
 ## Online demo
 
-[Online demo here](http://addonsv23.flowingcode.com/template)
+[Online demo here](http://addonsv23.flowingcode.com/grid-exporter-addon)
 
 ## Download release
 
-[Available in Vaadin Directory](https://vaadin.com/directory/component/template-addon)
+[Available in Vaadin Directory](https://vaadin.com/directory/component/grid-exporter-addon)
 
 ## Building and running demo
 
@@ -27,7 +29,7 @@ To see the demo, navigate to http://localhost:8080/
 
 ## Release notes
 
-See [here](https://github.com/FlowingCode/TemplateAddon/releases)
+See [here](https://github.com/FlowingCode/GridExporterAddon/releases)
 
 ## Issue tracking
 
@@ -48,10 +50,19 @@ Contributions are welcome, but there are no guarantees that they are accepted as
 
 Add-on is distributed under Apache License 2.0. For license terms, see LICENSE.txt.
 
-TEMPLATE_ADDON is written by Flowing Code S.A.
+Grid Exporter Addon is written by Flowing Code S.A.
 
 # Developer Guide
 
-## Getting started
+After creating a grid, the method createFor can be used to create the exporter that then can be configured
 
-Add your code samples in this section
+    GridExporter<Person> exporter = GridExporter.createFor(grid, "/custom-template.xlsx", "/custom-template.docx");
+    HashMap<String,String> placeholders = new HashMap<>();
+    placeholders.put("${date}", new SimpleDateFormat().format(Calendar.getInstance().getTime()));
+    exporter.setExportColumn(nameColumn, false);
+    exporter.setExportColumn(lastNameColumn, true);
+    exporter.setAdditionalPlaceHolders(placeholders);
+    exporter.setSheetNumber(1);
+    exporter.setCsvExportEnabled(false);
+    exporter.setTitle("People information");
+    exporter.setFileName("GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
