@@ -24,8 +24,10 @@ import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.vaadin.flow.component.grid.dataview.GridLazyDataView;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
+import com.vaadin.flow.data.provider.AbstractBackEndDataProvider;
 import com.vaadin.flow.data.provider.DataCommunicator;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.Query;
@@ -114,11 +116,17 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       LOGGER.error("Unable to get filter from DataCommunicator", e);
     }
 
-    @SuppressWarnings("rawtypes")
-    Query<T, ?> streamQuery = new Query<>(0, exporter.grid.getDataProvider().size(new Query(filter)),
-        exporter.grid.getDataCommunicator().getBackEndSorting(),
-        exporter.grid.getDataCommunicator().getInMemorySorting(), null);
-    Stream<T> dataStream = getDataStream(streamQuery);
+    Stream<T> dataStream;
+    if (dataProvider instanceof AbstractBackEndDataProvider) {
+      GridLazyDataView<T> gridLazyDataView = exporter.grid.getLazyDataView();
+      dataStream = gridLazyDataView.getItems();
+    } else {
+      @SuppressWarnings("rawtypes")
+      Query<T, ?> streamQuery = new Query<>(0, exporter.grid.getDataProvider().size(new Query(filter)),
+          exporter.grid.getDataCommunicator().getBackEndSorting(),
+          exporter.grid.getDataCommunicator().getInMemorySorting(), null);
+      dataStream = getDataStream(streamQuery);
+    }
 
     boolean[] notFirstRow = new boolean[1];
     Cell[] startingCell = new Cell[1];
