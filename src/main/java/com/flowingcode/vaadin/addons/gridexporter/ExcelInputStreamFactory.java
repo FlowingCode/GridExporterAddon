@@ -76,8 +76,12 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       fillHeaderOrFooter(sheet, cell, footers);
 
       exporter.additionalPlaceHolders.entrySet().forEach(entry -> {
-        Cell cellwp = findCellWithPlaceHolder(sheet, entry.getKey());
-        cellwp.setCellValue(entry.getValue());
+        Cell cellwp;
+        cellwp = findCellWithPlaceHolder(sheet, entry.getKey());
+        while (cellwp!=null) {
+          cellwp.setCellValue(entry.getValue());
+          cellwp = findCellWithPlaceHolder(sheet, entry.getKey());
+        }
       });
 
       final PipedOutputStream out = new PipedOutputStream(in);
