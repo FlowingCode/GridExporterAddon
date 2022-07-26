@@ -25,7 +25,7 @@ import com.flowingcode.vaadin.addons.demo.TabbedDemo;
 import com.vaadin.flow.router.Route;
 
 @SuppressWarnings("serial")
-@Route(value = "template", layout = DemoLayout.class)
+@Route(value = "gridexporter", layout = DemoLayout.class)
 @GithubLink("https://github.com/FlowingCode/AddonsStarter14")
 public class GridExporterDemoView extends TabbedDemo {
 
