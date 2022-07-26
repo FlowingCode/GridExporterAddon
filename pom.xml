@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.vaadin.addons.flowingcode</groupId>
 	<artifactId>grid-exporter-addon</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>Grid Exporter Add-on</name>
 	<description>Grid Exporter Add-on for Vaadin Flow</description>
 
@@ -39,7 +37,7 @@
 		<url>https://github.com/FlowingCode/GridExporterAddon</url>
 		<connection>scm:git:git://github.com/FlowingCode/GridExporterAddon.git</connection>
 		<developerConnection>scm:git:ssh://git@github.com:/FlowingCode/GridExporterAddon.git</developerConnection>
-		<tag>master</tag>
+		<tag>grid-exporter-addon-1.0.0</tag>
 	</scm>
 
 	<dependencyManagement>
