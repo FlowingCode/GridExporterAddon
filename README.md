@@ -66,3 +66,5 @@ After creating a grid, the method createFor can be used to create the exporter t
     exporter.setCsvExportEnabled(false);
     exporter.setTitle("People information");
     exporter.setFileName("GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
+
+Custom templates can be added anywhere in the classpath (ie: src/main/resources)
