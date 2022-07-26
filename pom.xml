@@ -136,7 +136,7 @@
 		<dependency>
 			<groupId>org.vaadin.addons.flowingcode</groupId>
 			<artifactId>grid-helpers</artifactId>
-			<version>0.1.1-SNAPSHOT</version>
+			<version>0.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
