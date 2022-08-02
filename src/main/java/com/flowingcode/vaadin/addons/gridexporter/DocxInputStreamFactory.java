@@ -21,6 +21,10 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblGridCol;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTcPr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.vaadin.flow.component.grid.Grid.Column;
@@ -49,39 +53,7 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
   public InputStream createInputStream() {
     PipedInputStream in = new PipedInputStream();
     try {
-      exporter.columns =
-          exporter.grid.getColumns().stream().filter(this::isExportable).collect(Collectors.toList());
-      
-      XWPFDocument doc = getBaseTemplateDoc();
-      
-      doc.getParagraphs().forEach(paragraph->{
-        paragraph.getRuns().forEach(run->{
-          String text = run.getText(0);
-          if (text!=null && text.contains(exporter.titlePlaceHolder)) {
-            text = text.replace(exporter.titlePlaceHolder, exporter.title);
-            run.setText(text, 0);
-          }
-          for (Map.Entry<String, String> entry : exporter.additionalPlaceHolders.entrySet()) {
-            if (text!=null && text.contains(entry.getKey())) {
-              text = text.replace(entry.getKey(), entry.getValue());
-              run.setText(text, 0);
-            }
-          }
-        });
-      });
-     
-      XWPFTable table = findTable(doc);
-
-      List<String> headers = getGridHeaders(exporter.grid);
-      XWPFTableCell cell = findCellWithPlaceHolder(table, exporter.headersPlaceHolder);
-      fillHeaderOrFooter(table, cell, headers, true, exporter.headersPlaceHolder);
-      
-      cell = findCellWithPlaceHolder(table, exporter.dataPlaceHolder);
-      fillData(table, cell, exporter.grid.getDataProvider());
-
-      cell = findCellWithPlaceHolder(table, exporter.footersPlaceHolder);
-      List<String> footers = getGridFooters(exporter.grid);
-      fillHeaderOrFooter(table, cell, footers, false, exporter.footersPlaceHolder);
+      XWPFDocument doc = createDoc();
       
       final PipedOutputStream out = new PipedOutputStream(in);
       new Thread(new Runnable() {
@@ -105,6 +77,53 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       LOGGER.error("Problem generating export", e);
     }
     return in;
+  }
+
+  protected XWPFDocument createDoc() throws IOException {
+    exporter.columns =
+        exporter.grid.getColumns().stream().filter(this::isExportable).collect(Collectors.toList());
+    
+    XWPFDocument doc = getBaseTemplateDoc();
+    
+    doc.getParagraphs().forEach(paragraph->{
+      paragraph.getRuns().forEach(run->{
+        String text = run.getText(0);
+        if (text!=null && text.contains(exporter.titlePlaceHolder)) {
+          text = text.replace(exporter.titlePlaceHolder, exporter.title);
+          run.setText(text, 0);
+        }
+        for (Map.Entry<String, String> entry : exporter.additionalPlaceHolders.entrySet()) {
+          if (text!=null && text.contains(entry.getKey())) {
+            text = text.replace(entry.getKey(), entry.getValue());
+            run.setText(text, 0);
+          }
+        }
+      });
+    });
+   
+    XWPFTable table = findTable(doc);
+//    table.getCTTbl().getTblPr().getTblW().setW("100");
+//    table.getCTTbl().getTblPr().getTblW().setType(org.openxmlformats.schemas.wordprocessingml.x2006.main.STTblWidth.Enum.forString("pct"));
+    table.getCTTbl().getTblPr().getTblW().setW("9638");
+    table.getCTTbl().getTblPr().getTblW().setType(org.openxmlformats.schemas.wordprocessingml.x2006.main.STTblWidth.Enum.forString("dxa"));
+
+    table.getCTTbl().getTblGrid().getGridColList().clear();
+    exporter.columns.forEach(col->{
+      CTTblGridCol cctblgridcol = table.getCTTbl().getTblGrid().addNewGridCol();
+      cctblgridcol.setW("" + Math.round(9638 / exporter.columns.size()));
+    });
+    
+    List<String> headers = getGridHeaders(exporter.grid);
+    XWPFTableCell cell = findCellWithPlaceHolder(table, exporter.headersPlaceHolder);
+    fillHeaderOrFooter(table, cell, headers, true, exporter.headersPlaceHolder);
+    
+    cell = findCellWithPlaceHolder(table, exporter.dataPlaceHolder);
+    fillData(table, cell, exporter.grid.getDataProvider());
+
+    cell = findCellWithPlaceHolder(table, exporter.footersPlaceHolder);
+    List<String> footers = getGridFooters(exporter.grid);
+    fillHeaderOrFooter(table, cell, footers, false, exporter.footersPlaceHolder);
+    return doc;
   }
   
   private void fillData(XWPFTable table, XWPFTableCell dataCell, DataProvider<T, ?> dataProvider) {
@@ -138,14 +157,14 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
         }
         startingCell[0] = currentRow.getCell(0);
       }
-      buildRow(t, currentRow, startingCell[0]);
+      buildRow(t, currentRow, startingCell[0], dataCell.getCTTc().getTcPr(), dataCell);
       firstRow[0] = false;
     });
 
   }
   
   @SuppressWarnings("unchecked")
-  private void buildRow(T item, XWPFTableRow row, XWPFTableCell startingCell) {
+  private void buildRow(T item, XWPFTableRow row, XWPFTableCell startingCell, CTTcPr tcpr, XWPFTableCell templateCell) {
     if (exporter.propertySet == null) {
       exporter.propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
     }
@@ -162,31 +181,46 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
         currentCell = startingCell.getTableRow().getCell(currentColumn[0]);
         if (currentCell==null) currentCell = startingCell.getTableRow().createCell();
       }
+      currentCell.setWidth("" + Math.round(9638 / exporter.columns.size()));
+      currentCell.getCTTc().setTcPr(tcpr);
+
+//      currentCell.setWidth("auto");
+//      currentCell.setWidthType(TableWidthType.AUTO);
       currentColumn[0] = currentColumn[0] + 1;
-      buildCell(value, currentCell);
+      buildCell(value, currentCell, templateCell.getParagraphs().iterator().next().getCTP().getPPr(), templateCell.getParagraphs().iterator().next().getRuns().iterator().next().getCTR().getRPr());
 
     });
   }
   
-  private void buildCell(Object value, XWPFTableCell cell) {
+  private void buildCell(Object value, XWPFTableCell cell, CTPPr ctpPr, CTRPr ctrPr) {
     if (value == null) {
-      setCellValue("", cell, exporter.dataPlaceHolder);
+      setCellValue("", cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
     } else if (value instanceof Boolean) {
-      setCellValue(""+(Boolean) value, cell, exporter.dataPlaceHolder);
+      setCellValue(""+(Boolean) value, cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
     } else if (value instanceof Calendar) {
       Calendar calendar = (Calendar) value;
-      setCellValue(""+calendar.getTime(), cell, exporter.dataPlaceHolder);
+      setCellValue(""+calendar.getTime(), cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
     } else if (value instanceof Double) {
-      setCellValue(""+(Double) value, cell, exporter.dataPlaceHolder);
+      setCellValue(""+(Double) value, cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
     } else {
-      setCellValue(""+value.toString(), cell, exporter.dataPlaceHolder);
+      setCellValue(""+value.toString(), cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
     }
   }
 
   private void setCellValue(String value, XWPFTableCell cell, String placeHolderToReplace) {
+    setCellValue(value,cell,placeHolderToReplace,null, null);
+  }
+
+  private void setCellValue(String value, XWPFTableCell cell, String placeHolderToReplace, CTPPr ctpPr, CTRPr ctrPr) {
     XWPFParagraph p = cell.getParagraphs().get(0);
+    if (ctpPr!=null) {
+      p.getCTP().setPPr(ctpPr);
+    }
     if (p.getRuns().size()==0) {
       XWPFRun run = p.createRun();
+      if (ctrPr!=null) {
+        run.getCTR().setRPr(ctrPr);
+      }
       run.setText(value);
     } else {
       p.getRuns().forEach(run->{
@@ -209,9 +243,16 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     headers.forEach(header->{
       if (!firstHeader[0]) {
         XWPFTableCell currentCell = tableRow.addNewTableCell();
-        setCellValue(header, currentCell, placeHolder);
+        currentCell.getCTTc().setTcPr(cell.getCTTc().getTcPr());
+//        currentCell.setWidth("auto");
+//        currentCell.setWidthType(TableWidthType.AUTO);
+        currentCell.setWidth("" + Math.round(9638 / exporter.columns.size()));
+        setCellValue(header, currentCell, placeHolder, cell.getParagraphs().iterator().next().getCTP().getPPr(), cell.getParagraphs().iterator().next().getRuns().iterator().next().getCTR().getRPr());
       } else {
         setCellValue(header, cell, placeHolder);
+        cell.setWidth("" + Math.round(9638 / exporter.columns.size()));
+//        cell.setWidth("auto");
+//        cell.setWidthType(TableWidthType.AUTO);
         firstHeader[0]=false;
       }
     });

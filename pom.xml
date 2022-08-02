@@ -127,6 +127,26 @@
 		  <version>5.6</version>
 		</dependency>
 		<dependency>
+		    <groupId>org.docx4j</groupId>
+		    <artifactId>docx4j-JAXB-Internal</artifactId>
+		    <version>8.3.8</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.docx4j</groupId>
+		    <artifactId>docx4j-JAXB-ReferenceImpl</artifactId>
+		    <version>8.3.8</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.docx4j</groupId>
+		    <artifactId>docx4j-JAXB-MOXy</artifactId>
+		    <version>8.3.8</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.docx4j</groupId>
+		    <artifactId>docx4j-export-fo</artifactId>
+		    <version>8.3.8</version>
+		</dependency>
+		<dependency>
 		   <groupId>com.flowingcode.addons</groupId>
 		   <artifactId>font-awesome-iron-iconset</artifactId>
 		   <version>3.0.0</version>

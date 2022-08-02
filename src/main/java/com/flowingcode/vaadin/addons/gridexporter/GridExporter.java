@@ -29,6 +29,7 @@ public class GridExporter<T> implements Serializable {
 
   private boolean excelExportEnabled = true;
   private boolean docxExportEnabled = true;
+  private boolean pdfExportEnabled = true;
   private boolean csvExportEnabled = true;
   
   static final String COLUMN_VALUE_PROVIDER_DATA = "column-value-provider-data";
@@ -81,6 +82,12 @@ public class GridExporter<T> implements Serializable {
         if (exporter.isDocxExportEnabled()) {
           Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_WORD.create());
           docLink.setHref(exporter.getDocxStreamResource(docxCustomTemplate));
+          docLink.getElement().setAttribute("download", true);
+          hl.add(docLink);
+        }
+        if (exporter.isPdfExportEnabled()) {
+          Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_PDF.create());
+          docLink.setHref(exporter.getPdfStreamResource(docxCustomTemplate));
           docLink.getElement().setAttribute("download", true);
           hl.add(docLink);
         }
@@ -144,6 +151,14 @@ public class GridExporter<T> implements Serializable {
 
   public StreamResource getDocxStreamResource(String template) {
     return new StreamResource(fileName + ".docx", new DocxInputStreamFactory<>(this, template));
+  }
+
+  public StreamResource getPdfStreamResource() {
+    return getPdfStreamResource(null);
+  }
+
+  public StreamResource getPdfStreamResource(String template) {
+    return new StreamResource(fileName + ".pdf", new PdfInputStreamFactory<>(this, template));
   }
 
   public StreamResource getCsvStreamResource() {
@@ -248,6 +263,14 @@ public class GridExporter<T> implements Serializable {
     this.docxExportEnabled = docxExportEnabled;
   }
 
+  public boolean isPdfExportEnabled() {
+    return pdfExportEnabled;
+  }
+
+  public void setPdfExportEnabled(boolean pdfExportEnabled) {
+    this.pdfExportEnabled = pdfExportEnabled;
+  }
+  
   public boolean isCsvExportEnabled() {
     return csvExportEnabled;
   }
