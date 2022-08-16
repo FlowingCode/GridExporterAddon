@@ -102,15 +102,13 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     });
    
     XWPFTable table = findTable(doc);
-//    table.getCTTbl().getTblPr().getTblW().setW("100");
-//    table.getCTTbl().getTblPr().getTblW().setType(org.openxmlformats.schemas.wordprocessingml.x2006.main.STTblWidth.Enum.forString("pct"));
-    table.getCTTbl().getTblPr().getTblW().setW("9638");
+    PoiHelper.setWonCTTblWidth(table.getCTTbl().getTblPr().getTblW(),"9638");
     table.getCTTbl().getTblPr().getTblW().setType(org.openxmlformats.schemas.wordprocessingml.x2006.main.STTblWidth.Enum.forString("dxa"));
 
     table.getCTTbl().getTblGrid().getGridColList().clear();
     exporter.columns.forEach(col->{
       CTTblGridCol cctblgridcol = table.getCTTbl().getTblGrid().addNewGridCol();
-      cctblgridcol.setW("" + Math.round(9638 / exporter.columns.size()));
+      PoiHelper.setWonCTTblGridCol(cctblgridcol, "" + Math.round(9638 / exporter.columns.size()));
     });
     
     List<String> headers = getGridHeaders(exporter.grid);
@@ -181,11 +179,8 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
         currentCell = startingCell.getTableRow().getCell(currentColumn[0]);
         if (currentCell==null) currentCell = startingCell.getTableRow().createCell();
       }
-      currentCell.setWidth("" + Math.round(9638 / exporter.columns.size()));
+      PoiHelper.setWidth(currentCell,"" + Math.round(9638 / exporter.columns.size()));
       currentCell.getCTTc().setTcPr(tcpr);
-
-//      currentCell.setWidth("auto");
-//      currentCell.setWidthType(TableWidthType.AUTO);
       currentColumn[0] = currentColumn[0] + 1;
       buildCell(value, currentCell, templateCell.getParagraphs().iterator().next().getCTP().getPPr(), templateCell.getParagraphs().iterator().next().getRuns().iterator().next().getCTR().getRPr());
 
@@ -244,15 +239,11 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       if (!firstHeader[0]) {
         XWPFTableCell currentCell = tableRow.addNewTableCell();
         currentCell.getCTTc().setTcPr(cell.getCTTc().getTcPr());
-//        currentCell.setWidth("auto");
-//        currentCell.setWidthType(TableWidthType.AUTO);
-        currentCell.setWidth("" + Math.round(9638 / exporter.columns.size()));
+        PoiHelper.setWidth(currentCell, "" + Math.round(9638 / exporter.columns.size()));
         setCellValue(header, currentCell, placeHolder, cell.getParagraphs().iterator().next().getCTP().getPPr(), cell.getParagraphs().iterator().next().getRuns().iterator().next().getCTR().getRPr());
       } else {
         setCellValue(header, cell, placeHolder);
-        cell.setWidth("" + Math.round(9638 / exporter.columns.size()));
-//        cell.setWidth("auto");
-//        cell.setWidthType(TableWidthType.AUTO);
+        PoiHelper.setWidth(cell, "" + Math.round(9638 / exporter.columns.size()));
         firstHeader[0]=false;
       }
     });
