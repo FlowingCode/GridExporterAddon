@@ -17,6 +17,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<drivers.dir>${project.basedir}/drivers</drivers.dir>
 		<jetty.version>9.4.36.v20210114</jetty.version>
+		<poi.version>5.2.2</poi.version>
 	</properties>
 
 	<organization>
@@ -114,12 +115,12 @@
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi</artifactId>
-			<version>5.2.2</version>
+			<version>${poi.version}</version>
 		</dependency>
 		<dependency>
 		    <groupId>org.apache.poi</groupId>
 		    <artifactId>poi-ooxml</artifactId>
-			<version>5.2.2</version>
+			<version>${poi.version}</version>
 		</dependency>
 		<dependency>
 		  <groupId>com.opencsv</groupId>
