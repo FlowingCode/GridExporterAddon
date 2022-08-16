@@ -12,7 +12,6 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
@@ -177,7 +176,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
 
   private void buildCell(Object value, Cell cell) {
     if (value == null) {
-      cell.setBlank();
+      PoiHelper.setBlank(cell);
     } else if (value instanceof Boolean) {
       cell.setCellValue((Boolean) value);
     } else if (value instanceof Calendar) {
@@ -190,15 +189,20 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     }
   }
 
-  private Workbook getBaseTemplateWorkbook() throws EncryptedDocumentException, IOException {
-    InputStream inp = this.getClass().getResourceAsStream(template);
-    return WorkbookFactory.create(inp);
+  private Workbook getBaseTemplateWorkbook() {
+    try {
+      InputStream inp = this.getClass().getResourceAsStream(template);
+      Workbook result = WorkbookFactory.create(inp); 
+      return result;
+    } catch (Exception e) {
+      throw new IllegalStateException("Problem creating workbook",e);
+    }
   }
 
   private Cell findCellWithPlaceHolder(Sheet sheet, String placeholder) {
     for (Row row : sheet) {
       for (Cell cell : row) {
-        if (cell.getCellType() == CellType.STRING) {
+        if (PoiHelper.cellTypeEquals(cell, CellType.STRING)) {
           if (cell.getRichStringCellValue().getString().trim().equals(placeholder)) {
             return cell;
           }
