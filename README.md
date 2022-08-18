@@ -4,7 +4,7 @@
 
 # Grid Exporter Add-on
 
-This is an addon that allows to export Vaadin's grid data to some formats like Excel, Docx and CSV.
+This is an addon that allows to export Vaadin's grid data to some formats like Excel, Docx, PDF and CSV. It works with Apache POI 5.2.2, but it works partially (docx and pdf won't work) with older versions (for using an older versions you need to exclude the apache poi transitive dependencies from this projects and add them with the explicit version that you want to use).
 
 ## Features
 
