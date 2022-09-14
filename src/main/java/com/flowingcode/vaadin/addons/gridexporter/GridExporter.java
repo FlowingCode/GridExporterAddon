@@ -19,6 +19,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.binder.PropertyDefinition;
 import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.renderer.LitRenderer;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.server.StreamResource;
 
@@ -56,6 +57,8 @@ public class GridExporter<T> implements Serializable {
   boolean autoAttachExportButtons = true;
 
   boolean autoMergeTitle = true;
+  
+  SerializableSupplier<String> nullValueSupplier;
 
   public int totalcells = 0;
 
@@ -140,7 +143,11 @@ public class GridExporter<T> implements Serializable {
     }
     
     if (value==null) {
-      throw new IllegalStateException("It's not possible to obtain a value for column, please set a value provider by calling setExportValue()");
+      if (nullValueSupplier!=null) {
+        value = nullValueSupplier.get();
+      } else {
+        throw new IllegalStateException("It's not possible to obtain a value for column, please set a value provider by calling setExportValue()");
+      }
     }
     return value;
   }
@@ -296,6 +303,10 @@ public class GridExporter<T> implements Serializable {
    */
   public void setExportColumn(Column<T> column, boolean export) {
     ComponentUtil.setData(column, COLUMN_EXPORTED_PROVIDER_DATA, export);
+  }
+  
+  public void setNullValueHandler(SerializableSupplier<String> nullValueSupplier) {
+    this.nullValueSupplier = nullValueSupplier;
   }
   
 

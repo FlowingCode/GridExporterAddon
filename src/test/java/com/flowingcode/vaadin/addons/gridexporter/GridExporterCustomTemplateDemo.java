@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
@@ -38,7 +39,7 @@ public class GridExporterCustomTemplateDemo extends Div {
         Double budget = faker.number().randomDouble(2, 10000, 100000);
         total[0] = total[0].add(BigDecimal.valueOf(budget));
         c.setFooter("$" + total[0]);
-        return new Person(faker.name().firstName(), faker.name().lastName(), faker.number().numberBetween(15, 50)
+        return new Person(faker.name().firstName(), (Math.random()>0.3?faker.name().lastName():null), faker.number().numberBetween(15, 50)
         		, budget);
     });
     grid.setItems(DataProvider.fromStream(stream));
@@ -51,6 +52,7 @@ public class GridExporterCustomTemplateDemo extends Div {
     exporter.setSheetNumber(1);
     exporter.setCsvExportEnabled(false);
     exporter.setTitle("People information");
+    exporter.setNullValueHandler(()->"(No lastname)");
     exporter.setFileName("GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
     add(grid);
   }
