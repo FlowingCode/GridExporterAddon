@@ -3,7 +3,12 @@ package com.flowingcode.vaadin.addons.gridexporter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
@@ -14,6 +19,7 @@ import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.renderer.LitRenderer;
+import com.vaadin.flow.data.renderer.LocalDateRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
@@ -30,13 +36,14 @@ public class GridExporterSimpleCustomTemplateDemo extends Div {
         .<Person>of("<b>${item.name}</b>").withProperty("name", Person::getName)).setHeader("Name");
     grid.addColumn("lastName").setHeader("Last Name");
     Column<Person> c = grid.addColumn(item->"$" + item.getBudget()).setHeader("Budget");
+    grid.addColumn(new LocalDateRenderer<>(Person::getFavDate, DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))).setHeader("Fav Date");
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
     Stream<Person> stream = IntStream.range(0, 100).asLongStream().mapToObj(number->{
         Faker faker = new Faker();
         Double budget = faker.number().randomDouble(2, 10000, 100000);
         return new Person(faker.name().firstName(), faker.name().lastName(), faker.number().numberBetween(15, 50)
-        		, budget);
+        		, budget, Instant.ofEpochMilli(faker.date().past(10000, TimeUnit.DAYS).getTime()).atZone(ZoneId.systemDefault()).toLocalDate());
     });
     grid.setItems(DataProvider.fromStream(stream));
     grid.setWidthFull();

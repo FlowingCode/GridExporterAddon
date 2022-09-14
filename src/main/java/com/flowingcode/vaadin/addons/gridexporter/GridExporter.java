@@ -1,6 +1,8 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import com.flowingcode.vaadin.addons.fontawesome.FontAwesome;
 import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
 import com.vaadin.flow.component.ComponentUtil;
-import com.vaadin.flow.component.grid.ColumnPathRenderer;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Anchor;
@@ -18,7 +19,9 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.binder.PropertyDefinition;
 import com.vaadin.flow.data.binder.PropertySet;
+import com.vaadin.flow.data.renderer.BasicRenderer;
 import com.vaadin.flow.data.renderer.LitRenderer;
+import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.server.StreamResource;
@@ -127,18 +130,31 @@ public class GridExporter<T> implements Serializable {
         LOGGER.warn("Column key: " + column.getKey() + " is a property which cannot be found");
       }
     }
-    // at this point if the value is still null then take the only value from ColumPathRenderer VP
-    if (value==null && column.getRenderer() instanceof ColumnPathRenderer) {
-      ColumnPathRenderer<T> r = (ColumnPathRenderer<T>) column.getRenderer();
-      value = r.getValueProviders().values().iterator().next().apply(item);
-    }
-    
+
     // if the value still couldn't be retrieved then if the renderer is a LitRenderer, take the value only
     // if there is one value provider
     if (value==null && column.getRenderer() instanceof LitRenderer) {
       LitRenderer<T> r = (LitRenderer<T>) column.getRenderer();
       if (r.getValueProviders().values().size()==1) {
         value = r.getValueProviders().values().iterator().next().apply(item);
+      }
+    }    
+
+    // at this point if the value is still null then take the only value from ColumPathRenderer VP
+    if (value==null && column.getRenderer() instanceof Renderer) {
+      Renderer<T> r = (Renderer<T>) column.getRenderer();
+      if (r.getValueProviders().size()>0) {
+        value = r.getValueProviders().values().iterator().next().apply(item);
+      } else if (r instanceof BasicRenderer) {
+        try {
+          Method getValueProviderMethod = BasicRenderer.class.getDeclaredMethod("getValueProvider");
+          getValueProviderMethod.setAccessible(true);
+          @SuppressWarnings("unchecked")
+          ValueProvider<T,?> vp = (ValueProvider<T, ?>) getValueProviderMethod.invoke(r);
+          value = vp.apply(item);
+        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+          throw new IllegalStateException("Problem obtaining value or exporting", e);
+        }
       }
     }
     
