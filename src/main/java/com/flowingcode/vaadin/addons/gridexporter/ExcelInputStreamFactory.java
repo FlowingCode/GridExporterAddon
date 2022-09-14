@@ -55,24 +55,28 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       Sheet sheet = wb.getSheetAt(exporter.sheetNumber);
 
       Cell titleCell = findCellWithPlaceHolder(sheet, exporter.titlePlaceHolder);
-      titleCell.setCellValue(exporter.title);
+      if (titleCell!=null) {
+        titleCell.setCellValue(exporter.title);
+      }
 
       Cell cell = findCellWithPlaceHolder(sheet, exporter.headersPlaceHolder);
       List<String> headers = getGridHeaders(exporter.grid);
 
       fillHeaderOrFooter(sheet, cell, headers);
-      if (exporter.autoMergeTitle) {
+      if (exporter.autoMergeTitle && titleCell!=null) {
         sheet.addMergedRegion(
             new CellRangeAddress(titleCell.getRowIndex(), titleCell.getRowIndex(),
                 titleCell.getColumnIndex(), titleCell.getColumnIndex() + headers.size() - 1));
       }
 
       cell = findCellWithPlaceHolder(sheet, exporter.dataPlaceHolder);
-      fillData(sheet, cell, exporter.grid.getDataProvider());
+      fillData(sheet, cell, exporter.grid.getDataProvider(), titleCell!=null);
 
       cell = findCellWithPlaceHolder(sheet, exporter.footersPlaceHolder);
       List<String> footers = getGridFooters(exporter.grid);
-      fillHeaderOrFooter(sheet, cell, footers);
+      if (cell!=null) {
+        fillHeaderOrFooter(sheet, cell, footers);
+      }
 
       exporter.additionalPlaceHolders.entrySet().forEach(entry -> {
         Cell cellwp;
@@ -109,7 +113,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
   
 
   @SuppressWarnings("unchecked")
-  private void fillData(Sheet sheet, Cell dataCell, DataProvider<T, ?> dataProvider) {
+  private void fillData(Sheet sheet, Cell dataCell, DataProvider<T, ?> dataProvider, boolean titleExists) {
     Object filter = null;
     try {
       Method method = DataCommunicator.class.getDeclaredMethod("getFilter");
@@ -138,7 +142,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       if (notFirstRow[0]) {
         CellStyle cellStyle = startingCell[0].getCellStyle();
         int lastRow = sheet.getLastRowNum();
-        sheet.shiftRows(startingCell[0].getRowIndex() + 1, lastRow, 1);
+        sheet.shiftRows(startingCell[0].getRowIndex() + (titleExists?1:0), lastRow, (titleExists?1:0));
         Row newRow = sheet.createRow(startingCell[0].getRowIndex() + 1);
         startingCell[0] = newRow.createCell(startingCell[0].getColumnIndex());
         startingCell[0].setCellStyle(cellStyle);

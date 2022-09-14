@@ -113,14 +113,18 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     
     List<String> headers = getGridHeaders(exporter.grid);
     XWPFTableCell cell = findCellWithPlaceHolder(table, exporter.headersPlaceHolder);
-    fillHeaderOrFooter(table, cell, headers, true, exporter.headersPlaceHolder);
+    if (cell!=null) {
+      fillHeaderOrFooter(table, cell, headers, true, exporter.headersPlaceHolder);
+    }
     
     cell = findCellWithPlaceHolder(table, exporter.dataPlaceHolder);
     fillData(table, cell, exporter.grid.getDataProvider());
 
     cell = findCellWithPlaceHolder(table, exporter.footersPlaceHolder);
     List<String> footers = getGridFooters(exporter.grid);
-    fillHeaderOrFooter(table, cell, footers, false, exporter.footersPlaceHolder);
+    if (cell!=null) {
+      fillHeaderOrFooter(table, cell, footers, false, exporter.footersPlaceHolder);
+    }
     return doc;
   }
   
