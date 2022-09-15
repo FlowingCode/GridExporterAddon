@@ -35,6 +35,7 @@ public class GridExporter<T> implements Serializable {
   private boolean docxExportEnabled = true;
   private boolean pdfExportEnabled = true;
   private boolean csvExportEnabled = true;
+  private boolean autoSizeColumns = true;
   
   static final String COLUMN_VALUE_PROVIDER_DATA = "column-value-provider-data";
   static final String COLUMN_EXPORTED_PROVIDER_DATA = "column-value-exported-data";
@@ -302,6 +303,14 @@ public class GridExporter<T> implements Serializable {
     this.csvExportEnabled = csvExportEnabled;
   }
 
+  public boolean isAutoSizeColumns() {
+    return autoSizeColumns;
+  }
+
+  public void setAutoSizeColumns(boolean autoSizeColumns) {
+    this.autoSizeColumns = autoSizeColumns;
+  }
+  
   /**
    * Configure a value provider for a given column. If there is a value provider,
    * that will be taken into account when exporting the column

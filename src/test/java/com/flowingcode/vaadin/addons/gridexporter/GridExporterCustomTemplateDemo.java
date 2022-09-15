@@ -31,6 +31,7 @@ public class GridExporterCustomTemplateDemo extends Div {
     grid.addColumn(LitRenderer
         .<Person>of("<b>${item.name}</b>").withProperty("name", Person::getName)).setHeader("Name");
     grid.addColumn("lastName").setHeader("Last Name");
+    grid.addColumn(item->Faker.instance().lorem().characters(30, 50)).setHeader("Big column");
     Column<Person> c = grid.addColumn(item->"$" + item.getBudget()).setHeader("Budget");
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
