@@ -70,12 +70,21 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       }
 
       cell = findCellWithPlaceHolder(sheet, exporter.dataPlaceHolder);
+      int[] dataStartingColumn = new int[1];
+      dataStartingColumn[0] = cell.getColumnIndex();
       fillData(sheet, cell, exporter.grid.getDataProvider(), titleCell!=null);
 
       cell = findCellWithPlaceHolder(sheet, exporter.footersPlaceHolder);
       List<String> footers = getGridFooters(exporter.grid);
       if (cell!=null) {
         fillHeaderOrFooter(sheet, cell, footers);
+      }
+      
+      if (exporter.isAutoSizeColumns()) {
+        exporter.columns.forEach(column->{
+          sheet.autoSizeColumn(dataStartingColumn[0]);
+          dataStartingColumn[0]++;
+        });
       }
 
       exporter.additionalPlaceHolders.entrySet().forEach(entry -> {
