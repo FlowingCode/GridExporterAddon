@@ -14,11 +14,11 @@ This is an addon that allows to export Vaadin's grid data to some formats like E
 
 ## Online demo
 
-[Online demo here](http://addonsv23.flowingcode.com/grid-exporter-addon)
+[Online demo here](http://addonsv23.flowingcode.com/gridexporter)
 
 ## Download release
 
-[Available in Vaadin Directory](https://vaadin.com/directory/component/grid-exporter-addon)
+[Available in Vaadin Directory](https://vaadin.com/directory/component/grid-exporter-add-on)
 
 ## Building and running demo
 
