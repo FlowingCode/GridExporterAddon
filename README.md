@@ -95,6 +95,10 @@ After creating a grid, the method createFor can be used to create the exporter t
 
 Custom templates can be added anywhere in the classpath (ie: src/main/resources)
 
+## Note when deploying with docker using Alpine images
+
+Apply [this fix](https://github.com/docker-library/openjdk/issues/73#issuecomment-451102068) as mentioned in #15 to avoid the "Cannot load from short array because "sun.awt.FontConfiguration.head" is null error.
+
 
 ## Special configuration when using Spring
 
