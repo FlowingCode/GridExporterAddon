@@ -66,6 +66,8 @@ public class GridExporter<T> implements Serializable {
 
   public int totalcells = 0;
 
+  private ButtonsAlignment buttonsAlignment = ButtonsAlignment.RIGHT;
+
   private GridExporter(Grid<T> grid) {
     this.grid = grid;
   }
@@ -105,13 +107,32 @@ public class GridExporter<T> implements Serializable {
           hl.add(csvLink);
         }
         hl.setSizeFull();
-        hl.setJustifyContentMode(JustifyContentMode.END);
+
+        hl.setJustifyContentMode(exporter.getJustifyContentMode());
+
         GridHelper.addToolbarFooter(grid, hl);
       }
     });
     return exporter;
   }
-  
+
+  private JustifyContentMode getJustifyContentMode() {
+    JustifyContentMode justifyContentMode;
+    if(this.buttonsAlignment == ButtonsAlignment.LEFT)
+    {
+      justifyContentMode =  JustifyContentMode.START;
+    }
+    else
+    {
+      justifyContentMode = JustifyContentMode.END;
+    }
+    return justifyContentMode;
+  }
+
+  public void setButtonsAlignment(ButtonsAlignment buttonsAlignment) {
+    this.buttonsAlignment = buttonsAlignment;
+  }
+
   Object extractValueFromColumn(T item, Column<T> column) {
     Object value = null;
     // first check if therer is a value provider for the current column
