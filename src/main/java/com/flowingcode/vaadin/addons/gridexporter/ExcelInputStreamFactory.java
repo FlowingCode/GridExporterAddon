@@ -12,9 +12,12 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -23,6 +26,7 @@ import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.dataview.GridLazyDataView;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
@@ -60,7 +64,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       }
 
       Cell cell = findCellWithPlaceHolder(sheet, exporter.headersPlaceHolder);
-      List<String> headers = getGridHeaders(exporter.grid);
+      List<Pair<String,ColumnTextAlign>> headers = getGridHeaders(exporter.grid);
 
       fillHeaderOrFooter(sheet, cell, headers);
       if (exporter.autoMergeTitle && titleCell!=null) {
@@ -75,7 +79,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       fillData(sheet, cell, exporter.grid.getDataProvider(), titleCell!=null);
 
       cell = findCellWithPlaceHolder(sheet, exporter.footersPlaceHolder);
-      List<String> footers = getGridFooters(exporter.grid);
+      List<Pair<String, ColumnTextAlign>> footers = getGridFooters(exporter.grid);
       if (cell!=null) {
         fillHeaderOrFooter(sheet, cell, footers);
       }
@@ -177,12 +181,31 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       Cell currentCell = startingCell;
       if (startingCell.getColumnIndex() < currentColumn[0]) {
         currentCell = startingCell.getRow().createCell(currentColumn[0]);
-        currentCell.setCellStyle(startingCell.getCellStyle());
+        CellStyle newCellStyle = currentCell.getSheet().getWorkbook().createCellStyle();
+        newCellStyle.cloneStyleFrom(startingCell.getCellStyle());
+        currentCell.setCellStyle(newCellStyle);
+        
+        configureAlignment(column.getTextAlign(), currentCell);
       }
       currentColumn[0] = currentColumn[0] + 1;
       buildCell(value, currentCell);
-
     });
+  }
+
+  protected void configureAlignment(ColumnTextAlign columnTextAlign, Cell currentCell) {
+    switch (columnTextAlign) {
+      case START:
+        currentCell.getCellStyle().setAlignment(HorizontalAlignment.LEFT);
+        break;
+      case CENTER:
+        currentCell.getCellStyle().setAlignment(HorizontalAlignment.CENTER);
+        break;
+      case END:
+        currentCell.getCellStyle().setAlignment(HorizontalAlignment.RIGHT);      
+        break;
+      default:
+        currentCell.getCellStyle().setAlignment(HorizontalAlignment.LEFT);        
+    }
   }
 
 
@@ -225,7 +248,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     return null;
   }
 
-  private void fillHeaderOrFooter(Sheet sheet, Cell headersCell, List<String> headers) {
+  private void fillHeaderOrFooter(Sheet sheet, Cell headersCell, List<Pair<String, ColumnTextAlign>> headers) {
     CellStyle style = headersCell.getCellStyle();
     sheet.setActiveCell(headersCell.getAddress());
     headers.forEach(header -> {
@@ -234,9 +257,12 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       if (cell == null) {
         cell = sheet.getRow(sheet.getActiveCell().getRow())
             .createCell(sheet.getActiveCell().getColumn());
-        cell.setCellStyle(style);
+        CellStyle newCellStyle = cell.getSheet().getWorkbook().createCellStyle();
+        newCellStyle.cloneStyleFrom(style);
+        cell.setCellStyle(newCellStyle);
       }
-      cell.setCellValue(header);
+      cell.setCellValue(header.getLeft());
+      configureAlignment(header.getRight(), cell);
       sheet.setActiveCell(
           new CellAddress(sheet.getActiveCell().getRow(), sheet.getActiveCell().getColumn() + 1));
     });

@@ -3,9 +3,12 @@ package com.flowingcode.vaadin.addons.gridexporter;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.LoggerFactory;
 import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
 import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.data.provider.DataCommunicator;
 import com.vaadin.flow.data.provider.Query;
@@ -52,13 +55,13 @@ abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
     return stream;
   }
   
-  protected List<String> getGridHeaders(Grid<T> grid) {
-    return exporter.columns.stream().map(column -> GridHelper.getHeader(grid,column))
+  protected List<Pair<String,ColumnTextAlign>> getGridHeaders(Grid<T> grid) {
+    return exporter.columns.stream().map(column -> ImmutablePair.of(GridHelper.getHeader(grid,column),column.getTextAlign()))
         .collect(Collectors.toList());
   }
 
-  protected List<String> getGridFooters(Grid<T> grid) {
-    return exporter.columns.stream().map(column -> GridHelper.getFooter(grid,column))
+  protected List<Pair<String,ColumnTextAlign>> getGridFooters(Grid<T> grid) {
+    return exporter.columns.stream().map(column -> ImmutablePair.of(GridHelper.getFooter(grid,column),column.getTextAlign()))
         .collect(Collectors.toList());
   }
 
