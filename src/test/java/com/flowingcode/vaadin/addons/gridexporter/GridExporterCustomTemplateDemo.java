@@ -5,12 +5,12 @@ import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
 import com.flowingcode.vaadin.addons.demo.DemoSource;
 import com.github.javafaker.Faker;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Div;
@@ -32,7 +32,7 @@ public class GridExporterCustomTemplateDemo extends Div {
         .<Person>of("<b>${item.name}</b>").withProperty("name", Person::getName)).setHeader("Name");
     grid.addColumn("lastName").setHeader("Last Name");
     grid.addColumn(item->Faker.instance().lorem().characters(30, 50)).setHeader("Big column");
-    Column<Person> c = grid.addColumn(item->"$" + item.getBudget()).setHeader("Budget");
+    Column<Person> c = grid.addColumn(item->"$" + item.getBudget()).setHeader("Budget").setTextAlign(ColumnTextAlign.END);
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
     Stream<Person> stream = IntStream.range(0, 100).asLongStream().mapToObj(number->{

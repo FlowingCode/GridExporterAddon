@@ -14,7 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.EncryptedDocumentException;
+import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
@@ -27,6 +29,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblGridCol;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTcPr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
@@ -111,7 +114,7 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       PoiHelper.setWonCTTblGridCol(cctblgridcol, "" + Math.round(9638 / exporter.columns.size()));
     });
     
-    List<String> headers = getGridHeaders(exporter.grid);
+    List<Pair<String,ColumnTextAlign>> headers = getGridHeaders(exporter.grid);
     XWPFTableCell cell = findCellWithPlaceHolder(table, exporter.headersPlaceHolder);
     if (cell!=null) {
       fillHeaderOrFooter(table, cell, headers, true, exporter.headersPlaceHolder);
@@ -121,7 +124,7 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     fillData(table, cell, exporter.grid.getDataProvider());
 
     cell = findCellWithPlaceHolder(table, exporter.footersPlaceHolder);
-    List<String> footers = getGridFooters(exporter.grid);
+    List<Pair<String,ColumnTextAlign>> footers = getGridFooters(exporter.grid);
     if (cell!=null) {
       fillHeaderOrFooter(table, cell, footers, false, exporter.footersPlaceHolder);
     }
@@ -187,7 +190,7 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       currentCell.getCTTc().setTcPr(tcpr);
       currentColumn[0] = currentColumn[0] + 1;
       buildCell(value, currentCell, templateCell.getParagraphs().iterator().next().getCTP().getPPr(), templateCell.getParagraphs().iterator().next().getRuns().iterator().next().getCTR().getRPr());
-
+      setCellAlignment(currentCell, column.getTextAlign());
     });
   }
   
@@ -236,7 +239,7 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
   }
 
 
-  private void fillHeaderOrFooter(XWPFTable table, XWPFTableCell cell, List<String> headers, boolean createColumns, String placeHolder) {
+  private void fillHeaderOrFooter(XWPFTable table, XWPFTableCell cell, List<Pair<String, ColumnTextAlign>> headers, boolean createColumns, String placeHolder) {
     boolean[] firstHeader = new boolean[] {true};
     XWPFTableRow tableRow = cell.getTableRow();
     headers.forEach(header->{
@@ -244,11 +247,31 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
         XWPFTableCell currentCell = tableRow.addNewTableCell();
         currentCell.getCTTc().setTcPr(cell.getCTTc().getTcPr());
         PoiHelper.setWidth(currentCell, "" + Math.round(9638 / exporter.columns.size()));
-        setCellValue(header, currentCell, placeHolder, cell.getParagraphs().iterator().next().getCTP().getPPr(), cell.getParagraphs().iterator().next().getRuns().iterator().next().getCTR().getRPr());
+        setCellValue(header.getLeft(), currentCell, placeHolder, cell.getParagraphs().iterator().next().getCTP().getPPr(), cell.getParagraphs().iterator().next().getRuns().iterator().next().getCTR().getRPr());
+        setCellAlignment(currentCell,header.getRight());
       } else {
-        setCellValue(header, cell, placeHolder);
+        setCellValue(header.getLeft(), cell, placeHolder);
+        setCellAlignment(cell,header.getRight());
         PoiHelper.setWidth(cell, "" + Math.round(9638 / exporter.columns.size()));
         firstHeader[0]=false;
+      }
+    });
+  }
+
+  private void setCellAlignment(XWPFTableCell currentCell, ColumnTextAlign right) {
+    currentCell.getParagraphs().forEach(paragraph->{
+      switch (right) {
+        case START:
+          paragraph.setAlignment(ParagraphAlignment.START);
+          break;
+        case CENTER:
+          paragraph.setAlignment(ParagraphAlignment.CENTER);
+          break;
+        case END:
+          paragraph.setAlignment(ParagraphAlignment.END);
+          break;
+        default:
+          paragraph.setAlignment(ParagraphAlignment.START);
       }
     });
   }
