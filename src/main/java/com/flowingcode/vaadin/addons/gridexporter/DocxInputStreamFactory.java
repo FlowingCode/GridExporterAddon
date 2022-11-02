@@ -114,7 +114,7 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       PoiHelper.setWonCTTblGridCol(cctblgridcol, "" + Math.round(9638 / exporter.columns.size()));
     });
     
-    List<Pair<String,ColumnTextAlign>> headers = getGridHeaders(exporter.grid);
+    List<Pair<String,Column<T>>> headers = getGridHeaders(exporter.grid);
     XWPFTableCell cell = findCellWithPlaceHolder(table, exporter.headersPlaceHolder);
     if (cell!=null) {
       fillHeaderOrFooter(table, cell, headers, true, exporter.headersPlaceHolder);
@@ -124,7 +124,7 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     fillData(table, cell, exporter.grid.getDataProvider());
 
     cell = findCellWithPlaceHolder(table, exporter.footersPlaceHolder);
-    List<Pair<String,ColumnTextAlign>> footers = getGridFooters(exporter.grid);
+    List<Pair<String,Column<T>>> footers = getGridFooters(exporter.grid);
     if (cell!=null) {
       fillHeaderOrFooter(table, cell, footers, false, exporter.footersPlaceHolder);
     }
@@ -239,7 +239,7 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
   }
 
 
-  private void fillHeaderOrFooter(XWPFTable table, XWPFTableCell cell, List<Pair<String, ColumnTextAlign>> headers, boolean createColumns, String placeHolder) {
+  private void fillHeaderOrFooter(XWPFTable table, XWPFTableCell cell, List<Pair<String, Column<T>>> headers, boolean createColumns, String placeHolder) {
     boolean[] firstHeader = new boolean[] {true};
     XWPFTableRow tableRow = cell.getTableRow();
     headers.forEach(header->{
@@ -248,10 +248,10 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
         currentCell.getCTTc().setTcPr(cell.getCTTc().getTcPr());
         PoiHelper.setWidth(currentCell, "" + Math.round(9638 / exporter.columns.size()));
         setCellValue(header.getLeft(), currentCell, placeHolder, cell.getParagraphs().iterator().next().getCTP().getPPr(), cell.getParagraphs().iterator().next().getRuns().iterator().next().getCTR().getRPr());
-        setCellAlignment(currentCell,header.getRight());
+        setCellAlignment(currentCell,header.getRight().getTextAlign());
       } else {
         setCellValue(header.getLeft(), cell, placeHolder);
-        setCellAlignment(cell,header.getRight());
+        setCellAlignment(cell,header.getRight().getTextAlign());
         PoiHelper.setWidth(cell, "" + Math.round(9638 / exporter.columns.size()));
         firstHeader[0]=false;
       }

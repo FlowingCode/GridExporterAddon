@@ -2,6 +2,7 @@ package com.flowingcode.vaadin.addons.gridexporter;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -32,14 +33,14 @@ public class GridExporterCustomTemplateDemo extends Div {
         .<Person>of("<b>${item.name}</b>").withProperty("name", Person::getName)).setHeader("Name");
     grid.addColumn("lastName").setHeader("Last Name");
     grid.addColumn(item->Faker.instance().lorem().characters(30, 50)).setHeader("Big column");
-    Column<Person> c = grid.addColumn(item->"$" + item.getBudget()).setHeader("Budget").setTextAlign(ColumnTextAlign.END);
+    Column<Person> budgetColumn = grid.addColumn(item->new DecimalFormat("$#,###.##").format(item.getBudget())).setHeader("Budget").setTextAlign(ColumnTextAlign.END);
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
     Stream<Person> stream = IntStream.range(0, 100).asLongStream().mapToObj(number->{
         Faker faker = new Faker();
         Double budget = faker.number().randomDouble(2, 10000, 100000);
         total[0] = total[0].add(BigDecimal.valueOf(budget));
-        c.setFooter("$" + total[0]);
+        budgetColumn.setFooter(new DecimalFormat("$#,###.##").format(total[0]));
         return new Person(faker.name().firstName(), (Math.random()>0.3?faker.name().lastName():null), faker.number().numberBetween(15, 50)
         		, budget);
     });
@@ -52,6 +53,7 @@ public class GridExporterCustomTemplateDemo extends Div {
     exporter.setAdditionalPlaceHolders(placeholders);
     exporter.setSheetNumber(1);
     exporter.setCsvExportEnabled(false);
+    exporter.setNumberColumnFormat(budgetColumn, "$#,###.##", "$#,###.##");
     exporter.setTitle("People information");
     exporter.setNullValueHandler(()->"(No lastname)");
     exporter.setFileName("GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));

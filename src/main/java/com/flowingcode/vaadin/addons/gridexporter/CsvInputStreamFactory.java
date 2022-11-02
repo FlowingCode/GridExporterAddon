@@ -16,7 +16,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.opencsv.CSVWriter;
-import com.vaadin.flow.component.grid.ColumnTextAlign;
+import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.provider.DataCommunicator;
@@ -46,7 +46,7 @@ class CsvInputStreamFactory<T> extends BaseInputStreamFactory<T> {
         public void run() {
           try {
             CSVWriter writer = new CSVWriter(new OutputStreamWriter(out));
-            List<Pair<String, ColumnTextAlign>> headers = getGridHeaders(exporter.grid);
+            List<Pair<String, Column<T>>> headers = getGridHeaders(exporter.grid);
             writer.writeNext(headers.stream().map(pair->pair.getLeft()).collect(Collectors.toList()).toArray(new String[0]));
             
             Object filter = null;
@@ -66,7 +66,7 @@ class CsvInputStreamFactory<T> extends BaseInputStreamFactory<T> {
             dataStream.forEach(t -> {
               writer.writeNext(buildRow(t,writer));
             });
-            List<Pair<String,ColumnTextAlign>> footers = getGridFooters(exporter.grid);
+            List<Pair<String,Column<T>>> footers = getGridFooters(exporter.grid);
             writer.writeNext(footers.stream().map(pair->pair.getLeft()).collect(Collectors.toList()).toArray(new String[0]));
             
             writer.close();
