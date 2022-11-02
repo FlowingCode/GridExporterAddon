@@ -17,7 +17,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.util.Strings;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
@@ -41,6 +43,7 @@ import com.vaadin.flow.data.provider.AbstractBackEndDataProvider;
 import com.vaadin.flow.data.provider.DataCommunicator;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.Query;
+import com.vaadin.flow.internal.StringUtil;
 
 /**
  * @author mlope
@@ -204,7 +207,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
 
   private Object transformToType(Object value, Column<T> column) {
     Object result = value;
-    if (value instanceof String) {
+    if (value instanceof String && Strings.isNotBlank((String)value)) {
       String stringValue = (String) value;
       try {
         if (ComponentUtil.getData(column, GridExporter.COLUMN_PARSING_FORMAT_PATTERN_DATA) != null) {
