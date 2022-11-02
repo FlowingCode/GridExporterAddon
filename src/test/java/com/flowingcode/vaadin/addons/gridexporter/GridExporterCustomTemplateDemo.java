@@ -28,12 +28,13 @@ public class GridExporterCustomTemplateDemo extends Div {
 
   public GridExporterCustomTemplateDemo() throws EncryptedDocumentException, IOException {
     Grid<Person> grid = new Grid<>(Person.class);
+    DecimalFormat decimalFormat = new DecimalFormat("$#,###.##");
     grid.removeAllColumns();
     grid.addColumn(LitRenderer
         .<Person>of("<b>${item.name}</b>").withProperty("name", Person::getName)).setHeader("Name");
     grid.addColumn("lastName").setHeader("Last Name");
     grid.addColumn(item->Faker.instance().lorem().characters(30, 50)).setHeader("Big column");
-    Column<Person> budgetColumn = grid.addColumn(item->new DecimalFormat("$#,###.##").format(item.getBudget())).setHeader("Budget").setTextAlign(ColumnTextAlign.END);
+    Column<Person> budgetColumn = grid.addColumn(item->decimalFormat.format(item.getBudget())).setHeader("Budget").setTextAlign(ColumnTextAlign.END);
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
     Stream<Person> stream = IntStream.range(0, 100).asLongStream().mapToObj(number->{
@@ -53,7 +54,7 @@ public class GridExporterCustomTemplateDemo extends Div {
     exporter.setAdditionalPlaceHolders(placeholders);
     exporter.setSheetNumber(1);
     exporter.setCsvExportEnabled(false);
-    exporter.setNumberColumnFormat(budgetColumn, "$#,###.##", "$#,###.##");
+    exporter.setNumberColumnFormat(budgetColumn, decimalFormat, "$#,###.##");
     exporter.setTitle("People information");
     exporter.setNullValueHandler(()->"(No lastname)");
     exporter.setFileName("GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));

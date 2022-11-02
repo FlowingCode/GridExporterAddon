@@ -35,13 +35,14 @@ public class GridExporterSimpleCustomTemplateDemo extends Div {
 
   public GridExporterSimpleCustomTemplateDemo() throws EncryptedDocumentException, IOException {
     Faker faker = new Faker();
+    DecimalFormat decimalFormat = new DecimalFormat("$#,###.##");
     Grid<Person> grid = new Grid<>(Person.class);
     grid.removeAllColumns();
     grid.addColumn(LitRenderer
         .<Person>of("<b>${item.name}</b>").withProperty("name", Person::getName)).setHeader("Name");
     grid.addColumn("lastName").setHeader("Last Name");
     Column<Person> minBudgetColumn = grid.addColumn(new NumberRenderer<>(Person::getBudget, NumberFormat.getCurrencyInstance())).setHeader("Min. Budget").setTextAlign(ColumnTextAlign.END);
-    Column<Person> maxBudgetColumn = grid.addColumn(item->new DecimalFormat("$#,###.##").format(item.getBudget()+(item.getBudget() / 2))).setHeader("Max. Budget").setTextAlign(ColumnTextAlign.END);
+    Column<Person> maxBudgetColumn = grid.addColumn(item->decimalFormat.format(item.getBudget()+(item.getBudget() / 2))).setHeader("Max. Budget").setTextAlign(ColumnTextAlign.END);
     Column<Person> dateColumn1 = grid.addColumn(new LocalDateRenderer<>(Person::getFavDate, DateTimeFormatter.ofPattern("dd/MM/yyyy"))).setHeader("Fav Date").setTextAlign(ColumnTextAlign.CENTER);
     Column<Person> dateColumn2 = grid.addColumn(item->item.getWorstDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).setHeader("Worst Date").setTextAlign(ColumnTextAlign.CENTER);
     BigDecimal[] total = new BigDecimal[1];
@@ -58,9 +59,9 @@ public class GridExporterSimpleCustomTemplateDemo extends Div {
     exporter.setSheetNumber(1);
     exporter.setCsvExportEnabled(false);
     exporter.setNumberColumnFormat(minBudgetColumn, "$#.###,##");
-    exporter.setNumberColumnFormat(maxBudgetColumn, "$#,###.##", "$#,###.##");
+    exporter.setNumberColumnFormat(maxBudgetColumn, decimalFormat, "$#,###.##");
     exporter.setDateColumnFormat(dateColumn1, "dd/MM/yyyy");
-    exporter.setDateColumnFormat(dateColumn2, "dd/MM/yyyy", "dd/MM/yyyy");
+    exporter.setDateColumnFormat(dateColumn2, new SimpleDateFormat("dd/MM/yyyy"), "dd/MM/yyyy");
     exporter.setFileName("GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
     add(grid);
   }
