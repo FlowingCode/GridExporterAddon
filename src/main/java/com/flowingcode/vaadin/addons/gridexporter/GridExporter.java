@@ -3,6 +3,8 @@ package com.flowingcode.vaadin.addons.gridexporter;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +41,7 @@ public class GridExporter<T> implements Serializable {
   
   static final String COLUMN_VALUE_PROVIDER_DATA = "column-value-provider-data";
   static final String COLUMN_EXPORTED_PROVIDER_DATA = "column-value-exported-data";
-  static final String COLUMN_PARSING_FORMAT_PATTERN_DATA = "column-number-parsing-format-pattern-data";
+  static final String COLUMN_PARSING_FORMAT_PATTERN_DATA = "column-parsing-format-pattern-data";
   static final String COLUMN_EXCEL_FORMAT_DATA = "column-excel-format-data";
   static final String COLUMN_TYPE_DATA = "column-type-data";
   static final String COLUMN_TYPE_NUMBER = "number";
@@ -361,31 +363,31 @@ public class GridExporter<T> implements Serializable {
   }
   
   /**
-   * If the column is based on a String, it configures a pattern to parse a number from the value
+   * If the column is based on a String, it configures a DecimalFormat to parse a number from the value
    * of the column so it can be converted to a Double, and then allows to specify the excel format
    * to be applied to the cell when exported to excel, so the resulting cell is not a string
    * but a number that can be used in formulas.
    * @param column
-   * @param parsingNumberFormatPattern
+   * @param decimalFormat
    * @param excelFormat
    */
-  public void setNumberColumnFormat(Column<T> column, String parsingNumberFormatPattern, String excelFormat) {
-    ComponentUtil.setData(column, COLUMN_PARSING_FORMAT_PATTERN_DATA, parsingNumberFormatPattern);
+  public void setNumberColumnFormat(Column<T> column, DecimalFormat decimalFormat, String excelFormat) {
+    ComponentUtil.setData(column, COLUMN_PARSING_FORMAT_PATTERN_DATA, decimalFormat);
     ComponentUtil.setData(column, COLUMN_EXCEL_FORMAT_DATA, excelFormat);    
     ComponentUtil.setData(column, COLUMN_TYPE_DATA, COLUMN_TYPE_NUMBER);
   }
   
   /**
-   * If the column is based on a String, it configures a pattern to parse a date from the value of
+   * If the column is based on a String, it configures a DateFormat to parse a date from the value of
    * the column so it can be converted to a java.util.Date, and then allows to specify the excel
    * format to be applied to the cell when exported to excel, so the resulting cell is not a string
    * but a date that can be used in formulas.
    * @param column
-   * @param parsingDateFormatPattern
+   * @param dateFormat
    * @param excelFormat
    */
-  public void setDateColumnFormat(Column<T> column, String parsingDateFormatPattern, String excelFormat) {
-    ComponentUtil.setData(column, COLUMN_PARSING_FORMAT_PATTERN_DATA, parsingDateFormatPattern);
+  public void setDateColumnFormat(Column<T> column, DateFormat dateFormat, String excelFormat) {
+    ComponentUtil.setData(column, COLUMN_PARSING_FORMAT_PATTERN_DATA, dateFormat);
     ComponentUtil.setData(column, COLUMN_EXCEL_FORMAT_DATA, excelFormat);    
     ComponentUtil.setData(column, COLUMN_TYPE_DATA, COLUMN_TYPE_DATE);
   }

@@ -8,9 +8,9 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.lang.reflect.Method;
+import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
@@ -206,24 +206,21 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     Object result = value;
     if (value instanceof String) {
       String stringValue = (String) value;
-      String parsingFormatPattern =
-          (String) ComponentUtil.getData(column, GridExporter.COLUMN_PARSING_FORMAT_PATTERN_DATA);
       try {
-        if (parsingFormatPattern != null) {
+        if (ComponentUtil.getData(column, GridExporter.COLUMN_PARSING_FORMAT_PATTERN_DATA) != null) {
           switch ((String) ComponentUtil.getData(column, GridExporter.COLUMN_TYPE_DATA)) {
             case GridExporter.COLUMN_TYPE_NUMBER:
-              DecimalFormat decimalFormat = new DecimalFormat(parsingFormatPattern);
+              DecimalFormat decimalFormat = (DecimalFormat) ComponentUtil.getData(column, GridExporter.COLUMN_PARSING_FORMAT_PATTERN_DATA);
               decimalFormat.setParseBigDecimal(true);
               result = decimalFormat.parse(stringValue).doubleValue();
               break;
             case GridExporter.COLUMN_TYPE_DATE:
-              result = new SimpleDateFormat(parsingFormatPattern).parse(stringValue);
+              result = ((DateFormat) ComponentUtil.getData(column, GridExporter.COLUMN_PARSING_FORMAT_PATTERN_DATA)).parse(stringValue);
               break;
           }
         }
       } catch (ParseException e) {
-        throw new IllegalStateException(String
-            .format("Problem parsing grid cell value with format: %s", parsingFormatPattern), e);
+        throw new IllegalStateException("Problem parsing grid cell value", e);
       }
     }
     return result;
