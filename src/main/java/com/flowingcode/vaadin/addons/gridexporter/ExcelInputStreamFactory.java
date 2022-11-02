@@ -251,12 +251,12 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     String excelFormat = (String) ComponentUtil.getData(column, GridExporter.COLUMN_EXCEL_FORMAT_DATA);
     if (value == null) {
       PoiHelper.setBlank(cell);
-    } else if (value instanceof Double) {
-      applyNumericFormat(cell, (Double) value, excelFormat);
+    } else if (value instanceof Number) {
+      applyNumericFormat(cell, value, excelFormat);
     } else if (value instanceof Date) {
-      applyNumericFormat(cell, (Date) value, excelFormat);
+      applyNumericFormat(cell, value, excelFormat);
     } else if (value instanceof LocalDate) {
-      applyNumericFormat(cell, (LocalDate) value, excelFormat);
+      applyNumericFormat(cell, value, excelFormat);
     } else {
       cell.setCellValue(value.toString());
     }
@@ -266,8 +266,8 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       String styleFormat) {
     DataFormat format = cell.getSheet().getWorkbook().createDataFormat();
     cell.getCellStyle().setDataFormat(format.getFormat(styleFormat));
-    if (value instanceof Double) {
-      cell.setCellValue((Double)value);
+    if (value instanceof Number) {
+      cell.setCellValue(((Number)value).doubleValue());
     } else if (value instanceof Date) {
       cell.setCellValue((Date)value);
     } else if (value instanceof LocalDate) {
