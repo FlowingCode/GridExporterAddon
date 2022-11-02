@@ -39,6 +39,11 @@ public class GridExporter<T> implements Serializable {
   
   static final String COLUMN_VALUE_PROVIDER_DATA = "column-value-provider-data";
   static final String COLUMN_EXPORTED_PROVIDER_DATA = "column-value-exported-data";
+  static final String COLUMN_PARSING_FORMAT_PATTERN_DATA = "column-number-parsing-format-pattern-data";
+  static final String COLUMN_EXCEL_FORMAT_DATA = "column-excel-format-data";
+  static final String COLUMN_TYPE_DATA = "column-type-data";
+  static final String COLUMN_TYPE_NUMBER = "number";
+  static final String COLUMN_TYPE_DATE = "date";
 
   Grid<T> grid;
 
@@ -355,5 +360,58 @@ public class GridExporter<T> implements Serializable {
     this.nullValueSupplier = nullValueSupplier;
   }
   
+  /**
+   * If the column is based on a String, it configures a pattern to parse a number from the value
+   * of the column so it can be converted to a Double, and then allows to specify the excel format
+   * to be applied to the cell when exported to excel, so the resulting cell is not a string
+   * but a number that can be used in formulas.
+   * @param column
+   * @param parsingNumberFormatPattern
+   * @param excelFormat
+   */
+  public void setNumberColumnFormat(Column<T> column, String parsingNumberFormatPattern, String excelFormat) {
+    ComponentUtil.setData(column, COLUMN_PARSING_FORMAT_PATTERN_DATA, parsingNumberFormatPattern);
+    ComponentUtil.setData(column, COLUMN_EXCEL_FORMAT_DATA, excelFormat);    
+    ComponentUtil.setData(column, COLUMN_TYPE_DATA, COLUMN_TYPE_NUMBER);
+  }
+  
+  /**
+   * If the column is based on a String, it configures a pattern to parse a date from the value of
+   * the column so it can be converted to a java.util.Date, and then allows to specify the excel
+   * format to be applied to the cell when exported to excel, so the resulting cell is not a string
+   * but a date that can be used in formulas.
+   * @param column
+   * @param parsingDateFormatPattern
+   * @param excelFormat
+   */
+  public void setDateColumnFormat(Column<T> column, String parsingDateFormatPattern, String excelFormat) {
+    ComponentUtil.setData(column, COLUMN_PARSING_FORMAT_PATTERN_DATA, parsingDateFormatPattern);
+    ComponentUtil.setData(column, COLUMN_EXCEL_FORMAT_DATA, excelFormat);    
+    ComponentUtil.setData(column, COLUMN_TYPE_DATA, COLUMN_TYPE_DATE);
+  }
+
+  /**
+   * If the column is based on a number attribute of the item, rendered with a NumberRenderer, it configures
+   * the excel format to be applied to the cell when exported to excel, so the resulting cell is not a string
+   * but a number that can be used in formulas.
+   * @param column
+   * @param excelFormat
+   */
+  public void setNumberColumnFormat(Column<T> column, String excelFormat) {
+    ComponentUtil.setData(column, COLUMN_EXCEL_FORMAT_DATA, excelFormat);    
+    ComponentUtil.setData(column, COLUMN_TYPE_DATA, COLUMN_TYPE_NUMBER);
+  }
+  
+  /**
+   * If the column is based on a LocalDate attribute of the item, rendered with a LocalDateRenderer, it configures
+   * the excel format to be applied to the cell when exported to excel, so the resulting cell is not a string
+   * but a date that can be used in formulas.
+   * @param column
+   * @param excelFormat
+   */
+  public void setDateColumnFormat(Column<T> column, String excelFormat) {
+    ComponentUtil.setData(column, COLUMN_EXCEL_FORMAT_DATA, excelFormat);    
+    ComponentUtil.setData(column, COLUMN_TYPE_DATA, COLUMN_TYPE_DATE);
+  }
 
 }

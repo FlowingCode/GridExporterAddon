@@ -90,6 +90,8 @@ After creating a grid, the method createFor can be used to create the exporter t
     exporter.setAdditionalPlaceHolders(placeholders);
     exporter.setSheetNumber(1);
     exporter.setCsvExportEnabled(false);
+    exporter.setNumberColumnFormat(budgetColumn, "$#,###.##", "$#,###.##");
+    exporter.setDateColumnFormat(dateColumn1, "dd/MM/yyyy");
     exporter.setTitle("People information");
     exporter.setFileName("GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
 

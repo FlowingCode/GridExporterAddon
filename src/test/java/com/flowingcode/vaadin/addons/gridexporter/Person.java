@@ -8,19 +8,21 @@ public class Person {
 	private String lastName;
 	private Integer age;
 	private Double budget;
-	private LocalDate favDate;
+    private LocalDate favDate;
+    private LocalDate worstDate;
 	
     public Person(String name, String lastName, Integer age, Double budget) {
-      this(name,lastName,age,budget,null);
+      this(name,lastName,age,budget,null,null);
     }
 
-    public Person(String name, String lastName, Integer age, Double budget, LocalDate favDate) {
+    public Person(String name, String lastName, Integer age, Double budget, LocalDate favDate, LocalDate worstDate) {
 		super();
 		this.name = name;
 		this.lastName = lastName;
 		this.age = age;
 		this.budget = budget;
 		this.favDate = favDate;
+		this.worstDate = worstDate;
 	}
 	public String getName() {
 		return name;
@@ -51,6 +53,12 @@ public class Person {
     }
     public void setFavDate(LocalDate favoriteDate) {
         this.favDate = favoriteDate;
+    }
+    public LocalDate getWorstDate() {
+      return worstDate;
+    }
+    public void setWorstDate(LocalDate worstDate) {
+      this.worstDate = worstDate;
     }
 	
 }
