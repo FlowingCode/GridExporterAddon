@@ -153,7 +153,7 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     dataStream.forEach(t -> {
       XWPFTableRow currentRow = startingCell[0].getTableRow();
       if (!firstRow[0]) {
-        currentRow = table.insertNewTableRow(dataCell.getTableRow().getTable().getRows().indexOf(dataCell.getTableRow())+1);
+        currentRow = table.insertNewTableRow(dataCell.getTableRow().getTable().getRows().indexOf(startingCell[0].getTableRow())+1);
         Iterator<Column<T>> iterator = exporter.columns.iterator();
         while (iterator.hasNext()) {
           iterator.next();
