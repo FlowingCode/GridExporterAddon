@@ -250,27 +250,22 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     if (value == null) {
       PoiHelper.setBlank(cell);
     } else if (value instanceof Number) {
-      applyNumericFormat(cell, value, excelFormat);
+      applyExcelFormat(cell, excelFormat);
+      cell.setCellValue(((Number)value).doubleValue());
     } else if (value instanceof Date) {
-      applyNumericFormat(cell, value, excelFormat);
+      applyExcelFormat(cell, excelFormat);
+      cell.setCellValue((Date)value);
     } else if (value instanceof LocalDate) {
-      applyNumericFormat(cell, value, excelFormat);
+      applyExcelFormat(cell, excelFormat);
+      cell.setCellValue(Date.from(((LocalDate)value).atStartOfDay(ZoneId.systemDefault()).toInstant()));
     } else {
       cell.setCellValue(value.toString());
     }
   }
 
-  public void applyNumericFormat(Cell cell, Object value,
-      String styleFormat) {
+  private void applyExcelFormat(Cell cell, String excelFormat) {
     DataFormat format = cell.getSheet().getWorkbook().createDataFormat();
-    cell.getCellStyle().setDataFormat(format.getFormat(styleFormat));
-    if (value instanceof Number) {
-      cell.setCellValue(((Number)value).doubleValue());
-    } else if (value instanceof Date) {
-      cell.setCellValue((Date)value);
-    } else if (value instanceof LocalDate) {
-      cell.setCellValue(Date.from(((LocalDate)value).atStartOfDay(ZoneId.systemDefault()).toInstant()));
-    }
+    cell.getCellStyle().setDataFormat(format.getFormat(excelFormat));
   }
 
   private Workbook getBaseTemplateWorkbook() {
