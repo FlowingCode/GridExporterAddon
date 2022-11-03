@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.lang.reflect.Method;
 import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
@@ -33,9 +32,7 @@ import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
-import com.vaadin.flow.data.provider.DataCommunicator;
 import com.vaadin.flow.data.provider.DataProvider;
-import com.vaadin.flow.data.provider.Query;
 
 /**
  * @author mlope
@@ -132,20 +129,7 @@ class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
   }
   
   private void fillData(XWPFTable table, XWPFTableCell dataCell, DataProvider<T, ?> dataProvider) {
-    Object filter = null;
-    try {
-      Method method = DataCommunicator.class.getDeclaredMethod("getFilter");
-      method.setAccessible(true);
-      filter = method.invoke(exporter.grid.getDataCommunicator());
-    } catch (Exception e) {
-      LOGGER.error("Unable to get filter from DataCommunicator", e);
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    Query<T, ?> streamQuery = new Query<>(0, exporter.grid.getDataProvider().size(new Query(filter)),
-        exporter.grid.getDataCommunicator().getBackEndSorting(),
-        exporter.grid.getDataCommunicator().getInMemorySorting(), null);
-    Stream<T> dataStream = getDataStream(streamQuery);
+    Stream<T> dataStream = obtainDataStream(dataProvider);
 
     boolean[] firstRow = new boolean[] {true};
     XWPFTableCell[] startingCell = new XWPFTableCell[1];

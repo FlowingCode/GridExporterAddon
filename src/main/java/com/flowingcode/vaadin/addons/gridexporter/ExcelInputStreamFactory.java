@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.lang.reflect.Method;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -35,13 +34,9 @@ import org.slf4j.LoggerFactory;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid.Column;
-import com.vaadin.flow.component.grid.dataview.GridLazyDataView;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
-import com.vaadin.flow.data.provider.AbstractBackEndDataProvider;
-import com.vaadin.flow.data.provider.DataCommunicator;
 import com.vaadin.flow.data.provider.DataProvider;
-import com.vaadin.flow.data.provider.Query;
 
 /**
  * @author mlope
@@ -132,30 +127,9 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
   }
 
 
-  @SuppressWarnings("unchecked")
   private void fillData(Sheet sheet, Cell dataCell, DataProvider<T, ?> dataProvider,
       boolean titleExists) {
-    Object filter = null;
-    try {
-      Method method = DataCommunicator.class.getDeclaredMethod("getFilter");
-      method.setAccessible(true);
-      filter = method.invoke(exporter.grid.getDataCommunicator());
-    } catch (Exception e) {
-      LOGGER.error("Unable to get filter from DataCommunicator", e);
-    }
-
-    Stream<T> dataStream;
-    if (dataProvider instanceof AbstractBackEndDataProvider) {
-      GridLazyDataView<T> gridLazyDataView = exporter.grid.getLazyDataView();
-      dataStream = gridLazyDataView.getItems();
-    } else {
-      @SuppressWarnings("rawtypes")
-      Query<T, ?> streamQuery =
-          new Query<>(0, exporter.grid.getDataProvider().size(new Query(filter)),
-              exporter.grid.getDataCommunicator().getBackEndSorting(),
-              exporter.grid.getDataCommunicator().getInMemorySorting(), null);
-      dataStream = getDataStream(streamQuery);
-    }
+    Stream<T> dataStream = obtainDataStream(dataProvider);
 
     boolean[] notFirstRow = new boolean[1];
     Cell[] startingCell = new Cell[1];
