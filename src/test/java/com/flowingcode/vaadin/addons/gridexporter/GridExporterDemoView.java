@@ -22,10 +22,12 @@ package com.flowingcode.vaadin.addons.gridexporter;
 import com.flowingcode.vaadin.addons.DemoLayout;
 import com.flowingcode.vaadin.addons.GithubLink;
 import com.flowingcode.vaadin.addons.demo.TabbedDemo;
+import com.vaadin.flow.router.ParentLayout;
 import com.vaadin.flow.router.Route;
 
 @SuppressWarnings("serial")
-@Route(value = "gridexporter", layout = DemoLayout.class)
+@ParentLayout(DemoLayout.class)
+@Route("gridexporter")
 @GithubLink("https://github.com/FlowingCode/GridExporterAddon")
 public class GridExporterDemoView extends TabbedDemo {
 
