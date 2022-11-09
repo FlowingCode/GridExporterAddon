@@ -24,11 +24,13 @@ import static org.junit.Assert.assertNotEquals;
 import com.flowingcode.vaadin.addons.DemoLayout;
 import com.flowingcode.vaadin.addons.gridexporter.GridExporterDemoView;
 import com.vaadin.flow.router.Route;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class LayoutTest {
 
   @Test
+  @Ignore
   public void testDemoLayout() {
     Route route = GridExporterDemoView.class.getAnnotation(Route.class);
     assertEquals("com.flowingcode.vaadin.addons.DemoLayout", DemoLayout.class.getName());
