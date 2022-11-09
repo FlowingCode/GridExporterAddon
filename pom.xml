@@ -352,6 +352,7 @@
 						</executions>
 						<configuration>
 							<quiet>true</quiet>
+							<doclint>none</doclint>
 							<additionalparam>-Xdoclint:none</additionalparam>
 						</configuration>
 					</plugin>
