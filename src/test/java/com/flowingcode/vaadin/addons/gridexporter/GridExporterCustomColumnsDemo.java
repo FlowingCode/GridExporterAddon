@@ -1,5 +1,14 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
+import com.flowingcode.vaadin.addons.demo.DemoSource;
+import com.github.javafaker.Faker;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.data.provider.DataProvider;
+import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.Route;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -8,14 +17,6 @@ import java.util.HashMap;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
-import com.flowingcode.vaadin.addons.demo.DemoSource;
-import com.github.javafaker.Faker;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.Grid.Column;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.data.provider.DataProvider;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
 
 @DemoSource
 @PageTitle("Grid Exporter Addon Custom Columns Demo")
@@ -28,7 +29,7 @@ public class GridExporterCustomColumnsDemo extends Div {
     grid.removeAllColumns();
     Column<Person> nameColumn = grid.addColumn("name").setHeader("Name");
     Column<Person> lastNameColumn = grid.addColumn("lastName").setHeader("Last Name");
-    Column<Person> budgetColumn = grid.addColumn(item->"$" + item.getBudget()).setHeader("Budget");
+    Column<Person> budgetColumn = grid.addColumn(item->"$" + item.getBudget()).setHeader(new Span("Budget"));
     lastNameColumn.setVisible(false);
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
@@ -48,6 +49,7 @@ public class GridExporterCustomColumnsDemo extends Div {
     placeholders.put("${date}", new SimpleDateFormat().format(Calendar.getInstance().getTime()));
     exporter.setExportColumn(nameColumn, false);
     exporter.setExportColumn(lastNameColumn, true);
+    exporter.setCustomHeader(budgetColumn, "Budget");
     exporter.setAdditionalPlaceHolders(placeholders);
     exporter.setSheetNumber(1);
     exporter.setCsvExportEnabled(false);
