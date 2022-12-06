@@ -80,7 +80,7 @@ Grid Exporter Addon is written by Flowing Code S.A.
 
 # Developer Guide
 
-After creating a grid, the method createFor can be used to create the exporter that then can be configured. It is important that the grid should always be completely configured (headers, footers, etc.), before creating the exporter, because if not, it will not work properly.
+After creating a grid, the method createFor can be used to create the exporter that then can be configured. It is important that the grid should always be completely configured (headers, footers, etc.), before creating the exporter, because if not, it will not work properly. Another important consideration is to create the exporter before attaching the grid, creating the grid exporter after the grid is attached will raise an exception (see [this issue](https://github.com/FlowingCode/GridExporterAddon/issues/8))
 
     GridExporter<Person> exporter = GridExporter.createFor(grid, "/custom-template.xlsx", "/custom-template.docx");
     HashMap<String,String> placeholders = new HashMap<>();
