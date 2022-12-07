@@ -1,13 +1,5 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.grid.Grid;
@@ -17,11 +9,24 @@ import com.vaadin.flow.data.provider.AbstractBackEndDataProvider;
 import com.vaadin.flow.data.provider.DataCommunicator;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.Query;
+import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.server.InputStreamFactory;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.util.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("serial")
 abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
 
+  private static final String GET_FOOTER_COMPONENT_METHOD_NAME = "getFooterComponent";
+  private static final String GET_HEADER_COMPONENT_METHOD_NAME = "getHeaderComponent";
   private final static Logger LOGGER = LoggerFactory.getLogger(BaseInputStreamFactory.class);
   protected GridExporter<T> exporter;
   protected String template;
@@ -60,16 +65,45 @@ abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
     }
     return stream;
   }
-  
-  protected List<Pair<String,Column<T>>> getGridHeaders(Grid<T> grid) {
-    return exporter.columns.stream().map(column -> ImmutablePair.of(GridHelper.getHeader(grid,column),column))
+
+  protected List<Pair<String, Column<T>>> getGridHeaders(Grid<T> grid) {
+    return exporter.columns.stream().map(column -> ImmutablePair.of(renderCellTextContent(grid, column, GridExporter.COLUMN_HEADER),column))
         .collect(Collectors.toList());
   }
 
-  protected List<Pair<String,Column<T>>> getGridFooters(Grid<T> grid) {
-    return exporter.columns.stream().map(column -> ImmutablePair.of(GridHelper.getFooter(grid,column),column))
+  protected List<Pair<String, Column<T>>> getGridFooters(Grid<T> grid) {
+    return exporter.columns.stream().map(column -> ImmutablePair.of(renderCellTextContent(grid, column, GridExporter.COLUMN_FOOTER),column))
         .collect(Collectors.toList());
   }
+
+  private String renderCellTextContent(Grid<T> grid, Column<T> column, String columnType) {
+    String headerOrFooter = (String) ComponentUtil.getData(column, columnType);
+    String methodName = GET_HEADER_COMPONENT_METHOD_NAME;
+    if (Strings.isBlank(headerOrFooter)) {
+      if (GridExporter.COLUMN_HEADER.equals(columnType)) {
+        headerOrFooter = GridHelper.getHeader(grid, column);        
+      } else if (GridExporter.COLUMN_FOOTER.equals(columnType)) {
+        methodName = GET_FOOTER_COMPONENT_METHOD_NAME;
+        headerOrFooter = GridHelper.getFooter(grid, column);
+      }
+    }
+    if (Strings.isBlank(headerOrFooter)) {
+      try {
+        Method getHeaderOrFooterComponent = Column.class.getMethod(methodName);
+        Element element = (Element) getHeaderOrFooterComponent.invoke(column);
+        if (element!=null) {
+          headerOrFooter = element.getTextRecursively();
+        }
+      } catch (NoSuchMethodException e) {
+        headerOrFooter = "";
+      } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        throw new IllegalStateException("Problem when trying to render header or footer cell text content", e);
+      }
+    }
+
+    return headerOrFooter;
+  }
+
 
   protected Stream<T> obtainDataStream(DataProvider<T, ?> dataProvider) {
     Object filter = null;

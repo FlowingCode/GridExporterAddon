@@ -46,6 +46,8 @@ public class GridExporter<T> implements Serializable {
   static final String COLUMN_TYPE_DATA = "column-type-data";
   static final String COLUMN_TYPE_NUMBER = "number";
   static final String COLUMN_TYPE_DATE = "date";
+  static final String COLUMN_HEADER = "column-header";
+  static final String COLUMN_FOOTER = "column-footer";
 
   Grid<T> grid;
 
@@ -415,5 +417,24 @@ public class GridExporter<T> implements Serializable {
     ComponentUtil.setData(column, COLUMN_EXCEL_FORMAT_DATA, excelFormat);    
     ComponentUtil.setData(column, COLUMN_TYPE_DATA, COLUMN_TYPE_DATE);
   }
+  
+  /**
+   * Configures the exporter to use a custom string for a specific column's header. Usefull when the header
+   * is a custom component.
+   * @param column
+   * @param header
+   */
+  public void setCustomHeader(Column<T> column, String header) {
+    ComponentUtil.setData(column, COLUMN_HEADER, header);
+  }
 
+  /**
+   * Configures the exporter to use a custom string for a specific column's footer. Usefull when the footer
+   * is a custom component.
+   * @param column
+   * @param header
+   */
+  public void setCustomFooter(Column<T> column, String header) {
+    ComponentUtil.setData(column, COLUMN_FOOTER, header);
+  }
 }
