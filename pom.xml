@@ -175,7 +175,7 @@
 		<dependency>
 			<groupId>com.flowingcode.vaadin.addons</groupId>
 			<artifactId>error-window-vaadin</artifactId>
-			<version>3.3.0</version>
+			<version>3.4.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
