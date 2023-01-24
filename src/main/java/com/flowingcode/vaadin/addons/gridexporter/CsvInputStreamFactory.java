@@ -11,6 +11,7 @@ import java.io.PipedOutputStream;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +52,9 @@ class CsvInputStreamFactory<T> extends BaseInputStreamFactory<T> {
               writer.writeNext(buildRow(t,writer));
             });
             List<Pair<String,Column<T>>> footers = getGridFooters(exporter.grid);
-            writer.writeNext(footers.stream().map(pair->pair.getLeft()).collect(Collectors.toList()).toArray(new String[0]));
-            
+            if (footers.stream().anyMatch(pair -> StringUtils.isNotBlank(pair.getKey()))) {
+              writer.writeNext(footers.stream().map(pair->pair.getLeft()).collect(Collectors.toList()).toArray(new String[0]));
+            }
             writer.close();
           } catch (IOException e) {
             LOGGER.error("Problem generating export", e);
