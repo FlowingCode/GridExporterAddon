@@ -10,13 +10,12 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.opencsv.CSVWriter;
-import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
 
@@ -37,36 +36,29 @@ class CsvInputStreamFactory<T> extends BaseInputStreamFactory<T> {
   public InputStream createInputStream() {
     PipedInputStream in = new PipedInputStream();
     try {
-      exporter.columns =
-          exporter.grid.getColumns().stream().filter(this::isExportable).collect(Collectors.toList());
-      final PipedOutputStream out = new PipedOutputStream(in);
-      new Thread(new Runnable() {
-        public void run() {
-          try {
-            CSVWriter writer = new CSVWriter(new OutputStreamWriter(out));
-            List<Pair<String, Column<T>>> headers = getGridHeaders(exporter.grid);
-            writer.writeNext(headers.stream().map(pair->pair.getLeft()).collect(Collectors.toList()).toArray(new String[0]));
-            
-            Stream<T> dataStream = obtainDataStream(exporter.grid.getDataProvider());
-            dataStream.forEach(t -> {
-              writer.writeNext(buildRow(t,writer));
-            });
-            List<Pair<String,Column<T>>> footers = getGridFooters(exporter.grid);
-            if (footers.stream().anyMatch(pair -> StringUtils.isNotBlank(pair.getKey()))) {
-              writer.writeNext(footers.stream().map(pair->pair.getLeft()).collect(Collectors.toList()).toArray(new String[0]));
-            }
-            writer.close();
-          } catch (IOException e) {
-            LOGGER.error("Problem generating export", e);
-          } finally {
-            if (out != null) {
-              try {
-                out.close();
-              } catch (IOException e) {
-                LOGGER.error("Problem generating export", e);
-              }
-            }
+      exporter.columns = exporter.grid.getColumns().stream().filter(this::isExportable)
+          .collect(Collectors.toList());
+
+      String[] headers =
+          getGridHeaders(exporter.grid).stream().map(Pair::getLeft).toArray(String[]::new);
+      List<String[]> data = obtainDataStream(exporter.grid.getDataProvider())
+          .map(this::buildRow).collect(Collectors.toList());
+      String[] footers = getGridFooters(exporter.grid).stream()
+          .filter(pair -> StringUtils.isNotBlank(pair.getKey()))
+          .map(Pair::getLeft).toArray(String[]::new);
+
+      PipedOutputStream out = new PipedOutputStream(in);
+      new Thread(() -> {
+        try (CSVWriter writer = new CSVWriter(new OutputStreamWriter(out))) {
+          writer.writeNext(headers);
+          writer.writeAll(data);
+          if (footers.length > 0) {
+            writer.writeNext(footers);
           }
+        } catch (IOException e) {
+          LOGGER.error("Problem generating export", e);
+        } finally {
+          IOUtils.closeQuietly(out);
         }
       }).start();
     } catch (IOException e) {
@@ -74,10 +66,9 @@ class CsvInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     }
     return in;
   }
-  
-  
+
   @SuppressWarnings("unchecked")
-  private String[] buildRow(T item, CSVWriter writer) {
+  private String[] buildRow(T item) {
     if (exporter.propertySet == null) {
       exporter.propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
     }
@@ -89,11 +80,10 @@ class CsvInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     exporter.columns.forEach(column -> {
       Object value = exporter.extractValueFromColumn(item, column);
 
-      result[currentColumn[0]]=""+value;
+      result[currentColumn[0]] = "" + value;
       currentColumn[0] = currentColumn[0] + 1;
     });
     return result;
   }
 
- 
 }
