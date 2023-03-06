@@ -31,6 +31,7 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -75,8 +76,8 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
   public InputStream createInputStream() {
     PipedInputStream in = new PipedInputStream();
     try {
-      exporter.columns = exporter.grid.getColumns().stream().filter(this::isExportable)
-          .collect(Collectors.toList());
+      exporter.setColumns(exporter.grid.getColumns().stream().filter(this::isExportable)
+          .collect(Collectors.toList()));
       Workbook wb = getBaseTemplateWorkbook();
       Sheet sheet = wb.getSheetAt(exporter.sheetNumber);
 
@@ -106,7 +107,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       }
 
       if (exporter.isAutoSizeColumns()) {
-        exporter.columns.forEach(column -> {
+        exporter.getColumns().forEach(column -> {
           sheet.autoSizeColumn(dataStartingColumn[0]);
           dataStartingColumn[0]++;
         });
@@ -174,26 +175,27 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     if (exporter.propertySet == null) {
       exporter.propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
     }
-    if (exporter.columns.isEmpty())
+    if (exporter.getColumns().isEmpty())
       throw new IllegalStateException("Grid has no columns");
 
     int[] currentColumn = new int[1];
     currentColumn[0] = startingCell.getColumnIndex();
-    exporter.columns.forEach(column -> {
-      Object value = exporter.extractValueFromColumn(item, column);
-      value = transformToType(value, column);
-      Cell currentCell = startingCell;
-      if (startingCell.getColumnIndex() < currentColumn[0]) {
-        currentCell = startingCell.getRow().createCell(currentColumn[0]);
-        CellStyle newCellStyle = currentCell.getSheet().getWorkbook().createCellStyle();
-        newCellStyle.cloneStyleFrom(startingCell.getCellStyle());
-        currentCell.setCellStyle(newCellStyle);
+    exporter.getColumnsOrdered().stream()
+        .forEach(column -> {
+          Object value = exporter.extractValueFromColumn(item, column);
+          value = transformToType(value, column);
+          Cell currentCell = startingCell;
+          if (startingCell.getColumnIndex() < currentColumn[0]) {
+            currentCell = startingCell.getRow().createCell(currentColumn[0]);
+            CellStyle newCellStyle = currentCell.getSheet().getWorkbook().createCellStyle();
+            newCellStyle.cloneStyleFrom(startingCell.getCellStyle());
+            currentCell.setCellStyle(newCellStyle);
 
-        configureAlignment(column.getTextAlign(), currentCell);
-      }
-      currentColumn[0] = currentColumn[0] + 1;
-      buildCell(value, currentCell, column);
-    });
+            configureAlignment(column.getTextAlign(), currentCell);
+          }
+          currentColumn[0] = currentColumn[0] + 1;
+          buildCell(value, currentCell, column);
+        });
   }
 
   private Object transformToType(Object value, Column<T> column) {

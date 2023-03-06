@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
@@ -55,8 +56,8 @@ class CsvInputStreamFactory<T> extends BaseInputStreamFactory<T> {
   public InputStream createInputStream() {
     PipedInputStream in = new PipedInputStream();
     try {
-      exporter.columns = exporter.grid.getColumns().stream().filter(this::isExportable)
-          .collect(Collectors.toList());
+      exporter.setColumns( exporter.grid.getColumns().stream().filter(this::isExportable)
+          .collect(Collectors.toList()));
 
       String[] headers =
           getGridHeaders(exporter.grid).stream().map(Pair::getLeft).toArray(String[]::new);
@@ -91,17 +92,18 @@ class CsvInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     if (exporter.propertySet == null) {
       exporter.propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
     }
-    if (exporter.columns.isEmpty())
+    if (exporter.getColumns().isEmpty())
       throw new IllegalStateException("Grid has no columns");
 
-    String[] result = new String[exporter.columns.size()];
+    String[] result = new String[exporter.getColumns().size()];
     int[] currentColumn = new int[1];
-    exporter.columns.forEach(column -> {
-      Object value = exporter.extractValueFromColumn(item, column);
+    exporter.getColumnsOrdered().stream()
+        .forEach(column -> {
+          Object value = exporter.extractValueFromColumn(item, column);
 
-      result[currentColumn[0]] = "" + value;
-      currentColumn[0] = currentColumn[0] + 1;
-    });
+          result[currentColumn[0]] = "" + value;
+          currentColumn[0] = currentColumn[0] + 1;
+        });
     return result;
   }
 
