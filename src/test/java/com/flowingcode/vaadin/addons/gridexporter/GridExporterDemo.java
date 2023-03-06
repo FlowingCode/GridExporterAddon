@@ -46,16 +46,17 @@ public class GridExporterDemo extends Div {
   public GridExporterDemo() throws EncryptedDocumentException, IOException {
     Grid<Person> grid = new Grid<>(Person.class);
     grid.removeAllColumns();
-    grid.addColumn("name").setHeader("Name");
-    grid.addColumn("lastName").setHeader("Last Name");
-    Column<Person> c = grid.addColumn(item->"$" + item.getBudget()).setHeader("Budget");
+    grid.setColumnReorderingAllowed(true);
+    Column<Person> nameCol = grid.addColumn("name").setHeader("Name");
+    Column<Person> lastNameCol = grid.addColumn("lastName").setHeader("Last Name");
+    Column<Person> budgetCol = grid.addColumn(item -> "$" + item.getBudget()).setHeader("Budget");
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
     Stream<Person> stream = IntStream.range(0, 100).asLongStream().mapToObj(number->{
         Faker faker = new Faker();
         Double budget = faker.number().randomDouble(2, 10000, 100000);
         total[0] = total[0].add(BigDecimal.valueOf(budget));
-        c.setFooter("$" + total[0]);
+        budgetCol.setFooter("$" + total[0]);
         return new Person(faker.name().firstName(), faker.name().lastName(), faker.number().numberBetween(15, 50)
         		, budget);
     });
@@ -63,7 +64,8 @@ public class GridExporterDemo extends Div {
     grid.setWidthFull();
     this.setSizeFull();
     GridExporter<Person> exporter = GridExporter.createFor(grid);
-    exporter.setExportValue(c, item->""+item.getBudget());
+    exporter.setExportValue(budgetCol, item -> "" + item.getBudget());
+    exporter.setColumnPosition(lastNameCol, 1);
     exporter.setTitle("People information");
     exporter.setFileName("GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
     add(grid);

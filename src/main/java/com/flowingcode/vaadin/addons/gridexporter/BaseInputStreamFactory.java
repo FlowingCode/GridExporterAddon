@@ -86,12 +86,12 @@ abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
   }
 
   protected List<Pair<String, Column<T>>> getGridHeaders(Grid<T> grid) {
-    return exporter.columns.stream().map(column -> ImmutablePair.of(renderCellTextContent(grid, column, GridExporter.COLUMN_HEADER),column))
+    return exporter.getColumnsOrdered().stream().map(column -> ImmutablePair.of(renderCellTextContent(grid, column, GridExporter.COLUMN_HEADER),column))
         .collect(Collectors.toList());
   }
 
   protected List<Pair<String, Column<T>>> getGridFooters(Grid<T> grid) {
-    return exporter.columns.stream().map(column -> ImmutablePair.of(renderCellTextContent(grid, column, GridExporter.COLUMN_FOOTER),column))
+    return exporter.getColumnsOrdered().stream().map(column -> ImmutablePair.of(renderCellTextContent(grid, column, GridExporter.COLUMN_FOOTER),column))
         .collect(Collectors.toList());
   }
 

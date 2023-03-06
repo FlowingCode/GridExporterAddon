@@ -24,10 +24,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
-import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.flowingcode.vaadin.addons.fontawesome.FontAwesome;
@@ -67,6 +69,7 @@ public class GridExporter<T> implements Serializable {
   static final String COLUMN_TYPE_DATE = "date";
   static final String COLUMN_HEADER = "column-header";
   static final String COLUMN_FOOTER = "column-footer";
+  static final String COLUMN_POSITION = "column-position";
 
   Grid<T> grid;
 
@@ -75,7 +78,7 @@ public class GridExporter<T> implements Serializable {
   String dataPlaceHolder = "${data}";
   String footersPlaceHolder = "${footers}";
 
-  Collection<Grid.Column<T>> columns;
+  List<Grid.Column<T>> columns;
   PropertySet<T> propertySet;
 
   Map<String, String> additionalPlaceHolders = new HashMap<>();
@@ -455,5 +458,38 @@ public class GridExporter<T> implements Serializable {
    */
   public void setCustomFooter(Column<T> column, String header) {
     ComponentUtil.setData(column, COLUMN_FOOTER, header);
+  }
+  
+  /**
+   * Assigns the position of the column in the exported file.
+   * 
+   * @param column
+   * @param position
+   */
+  public void setColumnPosition(Column<T> column, int position) {
+    ComponentUtil.setData(column, COLUMN_POSITION, position);
+  }
+
+  private int getColumnPosition(Column<T> column) {
+    return Optional.ofNullable(ComponentUtil.getData(column, COLUMN_POSITION))
+        .map(value -> Integer.class.cast(value)).orElse(Integer.MAX_VALUE);
+  }
+
+  public void setColumns(List<Grid.Column<T>> columns) {
+    this.columns = columns;
+  }
+
+  public List<Column<T>> getColumns() {
+    return columns;
+  }
+
+  /**
+   * Get columns in the positions specified by {@link GridExporter.setColumnPosition}
+   * @return
+   */
+  public List<Column<T>> getColumnsOrdered() {
+    return columns == null ? columns
+        : columns.stream().sorted(Comparator.comparing(this::getColumnPosition))
+            .collect(Collectors.toList());
   }
 }
