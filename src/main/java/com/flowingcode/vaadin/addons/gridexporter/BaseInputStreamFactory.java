@@ -20,6 +20,7 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
@@ -109,9 +110,9 @@ abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
     if (Strings.isBlank(headerOrFooter)) {
       try {
         Method getHeaderOrFooterComponent = Column.class.getMethod(methodName);
-        Element element = (Element) getHeaderOrFooterComponent.invoke(column);
-        if (element!=null) {
-          headerOrFooter = element.getTextRecursively();
+        Component component = (Component) getHeaderOrFooterComponent.invoke(column);
+        if (component!=null) {
+          headerOrFooter = component.getElement().getTextRecursively();
         }
       } catch (NoSuchMethodException e) {
         headerOrFooter = "";
