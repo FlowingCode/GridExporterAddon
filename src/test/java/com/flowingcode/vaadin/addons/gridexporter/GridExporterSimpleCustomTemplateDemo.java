@@ -62,7 +62,7 @@ public class GridExporterSimpleCustomTemplateDemo extends Div {
     grid.addColumn("lastName").setHeader("Last Name");
     Column<Person> minBudgetColumn = grid.addColumn(new NumberRenderer<>(Person::getBudget, NumberFormat.getCurrencyInstance())).setHeader("Min. Budget").setTextAlign(ColumnTextAlign.END);
     Column<Person> maxBudgetColumn = grid.addColumn(item->decimalFormat.format(item.getBudget()+(item.getBudget() / 2))).setHeader("Max. Budget").setTextAlign(ColumnTextAlign.END);
-    Column<Person> dateColumn1 = grid.addColumn(new LocalDateRenderer<>(Person::getFavDate, DateTimeFormatter.ofPattern("dd/MM/yyyy"))).setHeader("Fav Date").setTextAlign(ColumnTextAlign.CENTER);
+    Column<Person> dateColumn1 = grid.addColumn(new LocalDateRenderer<>(Person::getFavDate, "dd/MM/yyyy")).setHeader("Fav Date").setTextAlign(ColumnTextAlign.CENTER);
     Column<Person> dateColumn2 = grid.addColumn(item->item.getWorstDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).setHeader("Worst Date").setTextAlign(ColumnTextAlign.CENTER);
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
