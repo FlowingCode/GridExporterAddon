@@ -225,10 +225,12 @@ public class GridExporter<T> implements Serializable {
       if (nullValueSupplier!=null) {
         value = nullValueSupplier.get();
       } else {
-        throw new IllegalStateException("It's not possible to obtain a value for column '" + column.getKey() + "', please set a value provider by calling setExportValue()");
+        String colKey = "n/a";
+        if (column.getKey() != null) {
+          colKey = column.getKey();
+        }
+        throw new IllegalStateException("It's not possible to obtain a value for column with key '" + colKey + "', please set a value provider by calling setExportValue()");
       }
-    } else {
-      System.out.println(String.format("Found value '%s' for column '%s'", value, column.getKey()));
     }
     return value;
   }
@@ -496,7 +498,7 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * Get columns in the positions specified by {@link GridExporter . setColumnPosition}
+   * Get columns in the positions specified by {@link GridExporter.setColumnPosition}
    * @return
    */
   public List<Column<T>> getColumnsOrdered() {
