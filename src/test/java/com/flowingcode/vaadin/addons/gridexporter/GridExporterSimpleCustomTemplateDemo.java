@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -67,9 +67,9 @@ public class GridExporterSimpleCustomTemplateDemo extends Div {
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
     Stream<Person> stream = IntStream.range(0, 100).asLongStream().mapToObj(number->{
-        Double budget = faker.number().randomDouble(2, 10000, 100000);
-        return new Person(faker.name().firstName(), faker.name().lastName(), faker.number().numberBetween(15, 50)
-        		, budget, createRandomDate(faker), createRandomDate(faker));
+      Double budget = faker.number().randomDouble(2, 10000, 100000);
+      return new Person(faker.name().firstName(), faker.name().lastName(), faker.number().numberBetween(15, 50)
+          , budget, createRandomDate(faker), createRandomDate(faker));
     });
     grid.setItems(DataProvider.fromStream(stream));
     grid.setWidthFull();
