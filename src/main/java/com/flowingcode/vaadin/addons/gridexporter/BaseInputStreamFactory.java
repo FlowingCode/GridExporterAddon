@@ -19,7 +19,6 @@
  */
 package com.flowingcode.vaadin.addons.gridexporter;
 
-import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.grid.Grid;
@@ -30,9 +29,9 @@ import com.vaadin.flow.data.provider.DataCommunicator;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.server.InputStreamFactory;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -44,8 +43,6 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("serial")
 abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
 
-  private static final String GET_FOOTER_COMPONENT_METHOD_NAME = "getFooterComponent";
-  private static final String GET_HEADER_COMPONENT_METHOD_NAME = "getHeaderComponent";
   private static final Logger LOGGER = LoggerFactory.getLogger(BaseInputStreamFactory.class);
   protected GridExporter<T> exporter;
   protected String template;
@@ -59,7 +56,7 @@ abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
       GridExporter<T> exporter, String customTemplate, String defaultTemplate) {
     super();
     this.exporter = exporter;
-    this.template = customTemplate == null ? defaultTemplate : customTemplate;
+    template = customTemplate == null ? defaultTemplate : customTemplate;
   }
 
   /**
@@ -109,27 +106,27 @@ abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
 
   private String renderCellTextContent(Grid<T> grid, Column<T> column, String columnType) {
     String headerOrFooter = (String) ComponentUtil.getData(column, columnType);
-    String methodName = GET_HEADER_COMPONENT_METHOD_NAME;
     if (Strings.isBlank(headerOrFooter)) {
+      Function<Column<?>, Component> getHeaderOrFooterComponent;
       if (GridExporter.COLUMN_HEADER.equals(columnType)) {
-        headerOrFooter = GridHelper.getHeader(grid, column);
+        getHeaderOrFooterComponent = Column::getHeaderComponent;
+        headerOrFooter = column.getHeaderText();
       } else if (GridExporter.COLUMN_FOOTER.equals(columnType)) {
-        methodName = GET_FOOTER_COMPONENT_METHOD_NAME;
-        headerOrFooter = GridHelper.getFooter(grid, column);
+        getHeaderOrFooterComponent = Column::getFooterComponent;
+        headerOrFooter = column.getFooterText();
+      } else {
+        throw new IllegalArgumentException();
       }
-    }
-    if (Strings.isBlank(headerOrFooter)) {
-      try {
-        Method getHeaderOrFooterComponent = Column.class.getMethod(methodName);
-        Component component = (Component) getHeaderOrFooterComponent.invoke(column);
-        if (component != null) {
-          headerOrFooter = component.getElement().getTextRecursively();
+      if (Strings.isBlank(headerOrFooter)) {
+        try {
+          Component component = getHeaderOrFooterComponent.apply(column);
+          if (component != null) {
+            headerOrFooter = component.getElement().getTextRecursively();
+          }
+        } catch (RuntimeException e) {
+          throw new IllegalStateException(
+              "Problem when trying to render header or footer cell text content", e);
         }
-      } catch (NoSuchMethodException e) {
-        headerOrFooter = "";
-      } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-        throw new IllegalStateException(
-            "Problem when trying to render header or footer cell text content", e);
       }
     }
 
