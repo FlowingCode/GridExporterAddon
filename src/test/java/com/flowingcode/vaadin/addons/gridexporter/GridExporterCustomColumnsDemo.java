@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,23 +48,32 @@ public class GridExporterCustomColumnsDemo extends Div {
     grid.removeAllColumns();
     Column<Person> nameColumn = grid.addColumn("name").setHeader("Name");
     Column<Person> lastNameColumn = grid.addColumn("lastName").setHeader("Last Name");
-    Column<Person> budgetColumn = grid.addColumn(item->"$" + item.getBudget()).setHeader(new Span("Budget"));
+    Column<Person> budgetColumn =
+        grid.addColumn(item -> "$" + item.getBudget()).setHeader(new Span("Budget"));
     lastNameColumn.setVisible(false);
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
-    Stream<Person> stream = IntStream.range(0, 100).asLongStream().mapToObj(number->{
-        Faker faker = new Faker();
-        Double budget = faker.number().randomDouble(2, 10000, 100000);
-        total[0] = total[0].add(BigDecimal.valueOf(budget));
-        budgetColumn.setFooter("$" + total[0]);
-        return new Person(faker.name().firstName(), faker.name().lastName(), faker.number().numberBetween(15, 50)
-        		, budget);
-    });
+    Stream<Person> stream =
+        IntStream.range(0, 100)
+            .asLongStream()
+            .mapToObj(
+                number -> {
+                  Faker faker = new Faker();
+                  Double budget = faker.number().randomDouble(2, 10000, 100000);
+                  total[0] = total[0].add(BigDecimal.valueOf(budget));
+                  budgetColumn.setFooter("$" + total[0]);
+                  return new Person(
+                      faker.name().firstName(),
+                      faker.name().lastName(),
+                      faker.number().numberBetween(15, 50),
+                      budget);
+                });
     grid.setItems(DataProvider.fromStream(stream));
     grid.setWidthFull();
     this.setSizeFull();
-    GridExporter<Person> exporter = GridExporter.createFor(grid, "/custom-template.xlsx", "/custom-template.docx");
-    HashMap<String,String> placeholders = new HashMap<>();
+    GridExporter<Person> exporter =
+        GridExporter.createFor(grid, "/custom-template.xlsx", "/custom-template.docx");
+    HashMap<String, String> placeholders = new HashMap<>();
     placeholders.put("${date}", new SimpleDateFormat().format(Calendar.getInstance().getTime()));
     exporter.setExportColumn(nameColumn, false);
     exporter.setExportColumn(lastNameColumn, true);
@@ -73,7 +82,8 @@ public class GridExporterCustomColumnsDemo extends Div {
     exporter.setSheetNumber(1);
     exporter.setCsvExportEnabled(false);
     exporter.setTitle("People information");
-    exporter.setFileName("GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
+    exporter.setFileName(
+        "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
     add(grid);
   }
 }

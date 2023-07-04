@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,11 +17,15 @@
  * limitations under the License.
  * #L%
  */
-/**
- * 
- */
+/** */
 package com.flowingcode.vaadin.addons.gridexporter;
 
+import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
+import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.data.binder.BeanPropertySet;
+import com.vaadin.flow.data.binder.PropertySet;
+import com.vaadin.flow.data.provider.DataProvider;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
@@ -31,7 +35,6 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,21 +54,14 @@ import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.vaadin.flow.component.ComponentUtil;
-import com.vaadin.flow.component.grid.ColumnTextAlign;
-import com.vaadin.flow.component.grid.Grid.Column;
-import com.vaadin.flow.data.binder.BeanPropertySet;
-import com.vaadin.flow.data.binder.PropertySet;
-import com.vaadin.flow.data.provider.DataProvider;
 
 /**
  * @author mlope
- *
  */
 @SuppressWarnings("serial")
 class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
 
-  private final static Logger LOGGER = LoggerFactory.getLogger(ExcelInputStreamFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExcelInputStreamFactory.class);
   private static final String DEFAULT_TEMPLATE = "/template.xlsx";
 
   public ExcelInputStreamFactory(GridExporter<T> exporter, String template) {
@@ -76,8 +72,10 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
   public InputStream createInputStream() {
     PipedInputStream in = new PipedInputStream();
     try {
-      exporter.setColumns(exporter.grid.getColumns().stream().filter(this::isExportable)
-          .collect(Collectors.toList()));
+      exporter.setColumns(
+          exporter.grid.getColumns().stream()
+              .filter(this::isExportable)
+              .collect(Collectors.toList()));
       Workbook wb = getBaseTemplateWorkbook();
       Sheet sheet = wb.getSheetAt(exporter.sheetNumber);
 
@@ -91,8 +89,12 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
 
       fillHeaderOrFooter(sheet, cell, headers, true);
       if (exporter.autoMergeTitle && titleCell != null) {
-        sheet.addMergedRegion(new CellRangeAddress(titleCell.getRowIndex(), titleCell.getRowIndex(),
-            titleCell.getColumnIndex(), titleCell.getColumnIndex() + headers.size() - 1));
+        sheet.addMergedRegion(
+            new CellRangeAddress(
+                titleCell.getRowIndex(),
+                titleCell.getRowIndex(),
+                titleCell.getColumnIndex(),
+                titleCell.getColumnIndex() + headers.size() - 1));
       }
 
       cell = findCellWithPlaceHolder(sheet, exporter.dataPlaceHolder);
@@ -107,67 +109,77 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       }
 
       if (exporter.isAutoSizeColumns()) {
-        exporter.getColumns().forEach(column -> {
-          sheet.autoSizeColumn(dataStartingColumn[0]);
-          dataStartingColumn[0]++;
-        });
+        exporter
+            .getColumns()
+            .forEach(
+                column -> {
+                  sheet.autoSizeColumn(dataStartingColumn[0]);
+                  dataStartingColumn[0]++;
+                });
       }
 
-      exporter.additionalPlaceHolders.entrySet().forEach(entry -> {
-        Cell cellwp;
-        cellwp = findCellWithPlaceHolder(sheet, entry.getKey());
-        while (cellwp != null) {
-          cellwp.setCellValue(entry.getValue());
-          cellwp = findCellWithPlaceHolder(sheet, entry.getKey());
-        }
-      });
+      exporter
+          .additionalPlaceHolders
+          .entrySet()
+          .forEach(
+              entry -> {
+                Cell cellwp;
+                cellwp = findCellWithPlaceHolder(sheet, entry.getKey());
+                while (cellwp != null) {
+                  cellwp.setCellValue(entry.getValue());
+                  cellwp = findCellWithPlaceHolder(sheet, entry.getKey());
+                }
+              });
 
       final PipedOutputStream out = new PipedOutputStream(in);
-      new Thread(new Runnable() {
-        public void run() {
-          try {
-            wb.write(out);
-          } catch (IOException e) {
-            LOGGER.error("Problem generating export", e);
-          } finally {
-            if (out != null) {
-              try {
-                out.close();
-              } catch (IOException e) {
-                LOGGER.error("Problem generating export", e);
-              }
-            }
-          }
-        }
-      }).start();
+      new Thread(
+              new Runnable() {
+                public void run() {
+                  try {
+                    wb.write(out);
+                  } catch (IOException e) {
+                    LOGGER.error("Problem generating export", e);
+                  } finally {
+                    if (out != null) {
+                      try {
+                        out.close();
+                      } catch (IOException e) {
+                        LOGGER.error("Problem generating export", e);
+                      }
+                    }
+                  }
+                }
+              })
+          .start();
     } catch (IOException e) {
       LOGGER.error("Problem generating export", e);
     }
     return in;
   }
 
-
-  private void fillData(Sheet sheet, Cell dataCell, DataProvider<T, ?> dataProvider,
-      boolean titleExists) {
+  private void fillData(
+      Sheet sheet, Cell dataCell, DataProvider<T, ?> dataProvider, boolean titleExists) {
     Stream<T> dataStream = obtainDataStream(dataProvider);
 
     boolean[] notFirstRow = new boolean[1];
     Cell[] startingCell = new Cell[1];
     startingCell[0] = dataCell;
-    dataStream.forEach(t -> {
-      if (notFirstRow[0]) {
-        CellStyle cellStyle = startingCell[0].getCellStyle();
-        int lastRow = sheet.getLastRowNum();
-        sheet.shiftRows(startingCell[0].getRowIndex() + (titleExists ? 1 : 0), lastRow,
-            (titleExists ? 1 : 0));
-        Row newRow = sheet.createRow(startingCell[0].getRowIndex() + 1);
-        startingCell[0] = newRow.createCell(startingCell[0].getColumnIndex());
-        startingCell[0].setCellStyle(cellStyle);
-      }
-      buildRow(t, sheet, startingCell[0]);
-      notFirstRow[0] = true;
-    });
-
+    dataStream.forEach(
+        t -> {
+          if (notFirstRow[0]) {
+            CellStyle cellStyle = startingCell[0].getCellStyle();
+            int lastRow = sheet.getLastRowNum();
+            sheet.shiftRows(
+                startingCell[0].getRowIndex() + (titleExists ? 1 : 0),
+                lastRow,
+                (titleExists ? 1 : 0));
+            Row newRow = sheet.createRow(startingCell[0].getRowIndex() + 1);
+            startingCell[0] = newRow.createCell(startingCell[0].getColumnIndex());
+            startingCell[0].setCellStyle(cellStyle);
+          }
+          buildRow(t, sheet, startingCell[0]);
+          notFirstRow[0] = true;
+        });
   }
 
   @SuppressWarnings("unchecked")
@@ -175,43 +187,51 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     if (exporter.propertySet == null) {
       exporter.propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
     }
-    if (exporter.getColumns().isEmpty())
-      throw new IllegalStateException("Grid has no columns");
+    if (exporter.getColumns().isEmpty()) throw new IllegalStateException("Grid has no columns");
 
     int[] currentColumn = new int[1];
     currentColumn[0] = startingCell.getColumnIndex();
     exporter.getColumnsOrdered().stream()
-        .forEach(column -> {
-          Object value = exporter.extractValueFromColumn(item, column);
-          value = transformToType(value, column);
-          Cell currentCell = startingCell;
-          if (startingCell.getColumnIndex() < currentColumn[0]) {
-            currentCell = startingCell.getRow().createCell(currentColumn[0]);
-            CellStyle newCellStyle = currentCell.getSheet().getWorkbook().createCellStyle();
-            newCellStyle.cloneStyleFrom(startingCell.getCellStyle());
-            currentCell.setCellStyle(newCellStyle);
+        .forEach(
+            column -> {
+              Object value = exporter.extractValueFromColumn(item, column);
+              value = transformToType(value, column);
+              Cell currentCell = startingCell;
+              if (startingCell.getColumnIndex() < currentColumn[0]) {
+                currentCell = startingCell.getRow().createCell(currentColumn[0]);
+                CellStyle newCellStyle = currentCell.getSheet().getWorkbook().createCellStyle();
+                newCellStyle.cloneStyleFrom(startingCell.getCellStyle());
+                currentCell.setCellStyle(newCellStyle);
 
-            configureAlignment(column.getTextAlign(), currentCell);
-          }
-          currentColumn[0] = currentColumn[0] + 1;
-          buildCell(value, currentCell, column);
-        });
+                configureAlignment(column.getTextAlign(), currentCell);
+              }
+              currentColumn[0] = currentColumn[0] + 1;
+              buildCell(value, currentCell, column);
+            });
   }
 
   private Object transformToType(Object value, Column<T> column) {
     Object result = value;
-    if (value instanceof String && StringUtils.isNotBlank((String)value)) {
+    if (value instanceof String && StringUtils.isNotBlank((String) value)) {
       String stringValue = (String) value;
       try {
-        if (ComponentUtil.getData(column, GridExporter.COLUMN_PARSING_FORMAT_PATTERN_DATA) != null) {
+        if (ComponentUtil.getData(column, GridExporter.COLUMN_PARSING_FORMAT_PATTERN_DATA)
+            != null) {
           switch ((String) ComponentUtil.getData(column, GridExporter.COLUMN_TYPE_DATA)) {
             case GridExporter.COLUMN_TYPE_NUMBER:
-              DecimalFormat decimalFormat = (DecimalFormat) ComponentUtil.getData(column, GridExporter.COLUMN_PARSING_FORMAT_PATTERN_DATA);
+              DecimalFormat decimalFormat =
+                  (DecimalFormat)
+                      ComponentUtil.getData(
+                          column, GridExporter.COLUMN_PARSING_FORMAT_PATTERN_DATA);
               decimalFormat.setParseBigDecimal(true);
               result = decimalFormat.parse(stringValue).doubleValue();
               break;
             case GridExporter.COLUMN_TYPE_DATE:
-              result = ((DateFormat) ComponentUtil.getData(column, GridExporter.COLUMN_PARSING_FORMAT_PATTERN_DATA)).parse(stringValue);
+              result =
+                  ((DateFormat)
+                          ComponentUtil.getData(
+                              column, GridExporter.COLUMN_PARSING_FORMAT_PATTERN_DATA))
+                      .parse(stringValue);
               break;
           }
         }
@@ -238,21 +258,21 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     }
   }
 
-
-
   private void buildCell(Object value, Cell cell, Column<T> column) {
-    String excelFormat = (String) ComponentUtil.getData(column, GridExporter.COLUMN_EXCEL_FORMAT_DATA);
+    String excelFormat =
+        (String) ComponentUtil.getData(column, GridExporter.COLUMN_EXCEL_FORMAT_DATA);
     if (value == null) {
       PoiHelper.setBlank(cell);
     } else if (value instanceof Number) {
       applyExcelFormat(cell, excelFormat);
-      cell.setCellValue(((Number)value).doubleValue());
+      cell.setCellValue(((Number) value).doubleValue());
     } else if (value instanceof Date) {
       applyExcelFormat(cell, excelFormat);
-      cell.setCellValue((Date)value);
+      cell.setCellValue((Date) value);
     } else if (value instanceof LocalDate) {
       applyExcelFormat(cell, excelFormat);
-      cell.setCellValue(Date.from(((LocalDate)value).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+      cell.setCellValue(
+          Date.from(((LocalDate) value).atStartOfDay(ZoneId.systemDefault()).toInstant()));
     } else {
       cell.setCellValue(value.toString());
     }
@@ -286,25 +306,37 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     return null;
   }
 
-  private void fillHeaderOrFooter(Sheet sheet, Cell headersOrFootersCell,
-      List<Pair<String, Column<T>>> headersOrFooters, boolean isHeader) {
+  private void fillHeaderOrFooter(
+      Sheet sheet,
+      Cell headersOrFootersCell,
+      List<Pair<String, Column<T>>> headersOrFooters,
+      boolean isHeader) {
     CellStyle style = headersOrFootersCell.getCellStyle();
     sheet.setActiveCell(headersOrFootersCell.getAddress());
-    headersOrFooters.forEach(headerOrFooter -> {
-      Cell cell =
-          sheet.getRow(sheet.getActiveCell().getRow()).getCell(sheet.getActiveCell().getColumn());
-      if (cell == null) {
-        cell = sheet.getRow(sheet.getActiveCell().getRow())
-            .createCell(sheet.getActiveCell().getColumn());
-        CellStyle newCellStyle = cell.getSheet().getWorkbook().createCellStyle();
-        newCellStyle.cloneStyleFrom(style);
-        cell.setCellStyle(newCellStyle);
-      }
-      Object value = (isHeader?headerOrFooter.getLeft():transformToType(headerOrFooter.getLeft(), headerOrFooter.getRight()));
-      buildCell(value, cell, headerOrFooter.getRight());
-      configureAlignment(headerOrFooter.getRight().getTextAlign(), cell);
-      sheet.setActiveCell(
-          new CellAddress(sheet.getActiveCell().getRow(), sheet.getActiveCell().getColumn() + 1));
-    });
+    headersOrFooters.forEach(
+        headerOrFooter -> {
+          Cell cell =
+              sheet
+                  .getRow(sheet.getActiveCell().getRow())
+                  .getCell(sheet.getActiveCell().getColumn());
+          if (cell == null) {
+            cell =
+                sheet
+                    .getRow(sheet.getActiveCell().getRow())
+                    .createCell(sheet.getActiveCell().getColumn());
+            CellStyle newCellStyle = cell.getSheet().getWorkbook().createCellStyle();
+            newCellStyle.cloneStyleFrom(style);
+            cell.setCellStyle(newCellStyle);
+          }
+          Object value =
+              (isHeader
+                  ? headerOrFooter.getLeft()
+                  : transformToType(headerOrFooter.getLeft(), headerOrFooter.getRight()));
+          buildCell(value, cell, headerOrFooter.getRight());
+          configureAlignment(headerOrFooter.getRight().getTextAlign(), cell);
+          sheet.setActiveCell(
+              new CellAddress(
+                  sheet.getActiveCell().getRow(), sheet.getActiveCell().getColumn() + 1));
+        });
   }
 }
