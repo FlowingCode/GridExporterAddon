@@ -19,25 +19,10 @@
  */
 package com.flowingcode.vaadin.addons.gridexporter;
 
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.text.DateFormat;
-import java.text.DecimalFormat;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import com.vaadin.flow.component.grid.ColumnPathRenderer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.flowingcode.vaadin.addons.fontawesome.FontAwesome;
 import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
 import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.grid.ColumnPathRenderer;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Anchor;
@@ -51,11 +36,25 @@ import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.server.StreamResource;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("serial")
 public class GridExporter<T> implements Serializable {
 
-  private final static Logger LOGGER = LoggerFactory.getLogger(ExcelInputStreamFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExcelInputStreamFactory.class);
 
   private boolean excelExportEnabled = true;
   private boolean docxExportEnabled = true;
@@ -110,54 +109,53 @@ public class GridExporter<T> implements Serializable {
     return createFor(grid, null, null);
   }
 
-  public static <T> GridExporter<T> createFor(Grid<T> grid, String excelCustomTemplate,
-                                              String docxCustomTemplate) {
+  public static <T> GridExporter<T> createFor(
+      Grid<T> grid, String excelCustomTemplate, String docxCustomTemplate) {
     GridExporter<T> exporter = new GridExporter<>(grid);
-    grid.getElement().addAttachListener(ev -> {
-      if (exporter.autoAttachExportButtons) {
-        HorizontalLayout hl = new HorizontalLayout();
-        if (exporter.isExcelExportEnabled()) {
-          Anchor excelLink = new Anchor("", FontAwesome.Regular.FILE_EXCEL.create());
-          excelLink.setHref(exporter.getExcelStreamResource(excelCustomTemplate));
-          excelLink.getElement().setAttribute("download", true);
-          hl.add(excelLink);
-        }
-        if (exporter.isDocxExportEnabled()) {
-          Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_WORD.create());
-          docLink.setHref(exporter.getDocxStreamResource(docxCustomTemplate));
-          docLink.getElement().setAttribute("download", true);
-          hl.add(docLink);
-        }
-        if (exporter.isPdfExportEnabled()) {
-          Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_PDF.create());
-          docLink.setHref(exporter.getPdfStreamResource(docxCustomTemplate));
-          docLink.getElement().setAttribute("download", true);
-          hl.add(docLink);
-        }
-        if (exporter.isCsvExportEnabled()) {
-          Anchor csvLink = new Anchor("", FontAwesome.Regular.FILE_LINES.create());
-          csvLink.setHref(exporter.getCsvStreamResource());
-          csvLink.getElement().setAttribute("download", true);
-          hl.add(csvLink);
-        }
-        hl.setSizeFull();
+    grid.getElement()
+        .addAttachListener(
+            ev -> {
+              if (exporter.autoAttachExportButtons) {
+                HorizontalLayout hl = new HorizontalLayout();
+                if (exporter.isExcelExportEnabled()) {
+                  Anchor excelLink = new Anchor("", FontAwesome.Regular.FILE_EXCEL.create());
+                  excelLink.setHref(exporter.getExcelStreamResource(excelCustomTemplate));
+                  excelLink.getElement().setAttribute("download", true);
+                  hl.add(excelLink);
+                }
+                if (exporter.isDocxExportEnabled()) {
+                  Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_WORD.create());
+                  docLink.setHref(exporter.getDocxStreamResource(docxCustomTemplate));
+                  docLink.getElement().setAttribute("download", true);
+                  hl.add(docLink);
+                }
+                if (exporter.isPdfExportEnabled()) {
+                  Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_PDF.create());
+                  docLink.setHref(exporter.getPdfStreamResource(docxCustomTemplate));
+                  docLink.getElement().setAttribute("download", true);
+                  hl.add(docLink);
+                }
+                if (exporter.isCsvExportEnabled()) {
+                  Anchor csvLink = new Anchor("", FontAwesome.Regular.FILE_LINES.create());
+                  csvLink.setHref(exporter.getCsvStreamResource());
+                  csvLink.getElement().setAttribute("download", true);
+                  hl.add(csvLink);
+                }
+                hl.setSizeFull();
 
-        hl.setJustifyContentMode(exporter.getJustifyContentMode());
+                hl.setJustifyContentMode(exporter.getJustifyContentMode());
 
-        GridHelper.addToolbarFooter(grid, hl);
-      }
-    });
+                GridHelper.addToolbarFooter(grid, hl);
+              }
+            });
     return exporter;
   }
 
   private JustifyContentMode getJustifyContentMode() {
     JustifyContentMode justifyContentMode;
-    if(this.buttonsAlignment == ButtonsAlignment.LEFT)
-    {
-      justifyContentMode =  JustifyContentMode.START;
-    }
-    else
-    {
+    if (this.buttonsAlignment == ButtonsAlignment.LEFT) {
+      justifyContentMode = JustifyContentMode.START;
+    } else {
       justifyContentMode = JustifyContentMode.END;
     }
     return justifyContentMode;
@@ -171,13 +169,15 @@ public class GridExporter<T> implements Serializable {
     Object value = null;
     // first check if therer is a value provider for the current column
     @SuppressWarnings("unchecked")
-    ValueProvider<T,String> customVP = (ValueProvider<T, String>) ComponentUtil.getData(column, GridExporter.COLUMN_VALUE_PROVIDER_DATA);
-    if (customVP!=null) {
+    ValueProvider<T, String> customVP =
+        (ValueProvider<T, String>)
+            ComponentUtil.getData(column, GridExporter.COLUMN_VALUE_PROVIDER_DATA);
+    if (customVP != null) {
       value = customVP.apply(item);
     }
 
     // if there is a key, assume that the property can be retrieved from it
-    if (value==null && column.getKey() != null) {
+    if (value == null && column.getKey() != null) {
       Optional<PropertyDefinition<T, ?>> propertyDefinition =
           this.propertySet.getProperty(column.getKey());
       if (propertyDefinition.isPresent()) {
@@ -187,23 +187,24 @@ public class GridExporter<T> implements Serializable {
       }
     }
 
-    // if the value still couldn't be retrieved then if the renderer is a LitRenderer, take the value only
+    // if the value still couldn't be retrieved then if the renderer is a LitRenderer, take the
+    // value only
     // if there is one value provider
-    if (value==null && column.getRenderer() instanceof LitRenderer) {
+    if (value == null && column.getRenderer() instanceof LitRenderer) {
       LitRenderer<T> r = (LitRenderer<T>) column.getRenderer();
-      if (r.getValueProviders().values().size()==1) {
+      if (r.getValueProviders().values().size() == 1) {
         value = r.getValueProviders().values().iterator().next().apply(item);
       }
     }
 
     // at this point if the value is still null then take the only value from ColumPathRenderer VP
-    if (value==null && column.getRenderer() instanceof Renderer) {
+    if (value == null && column.getRenderer() instanceof Renderer) {
       Renderer<T> renderer = (Renderer<T>) column.getRenderer();
       if (renderer instanceof ColumnPathRenderer) {
         try {
           Field provider = ColumnPathRenderer.class.getDeclaredField("provider");
           provider.setAccessible(true);
-          ValueProvider<T,?> vp = (ValueProvider<T, ?>) provider.get(renderer);
+          ValueProvider<T, ?> vp = (ValueProvider<T, ?>) provider.get(renderer);
           value = vp.apply(item);
         } catch (NoSuchFieldException | IllegalAccessException e) {
           throw new IllegalStateException("Problem obtaining value or exporting", e);
@@ -213,23 +214,30 @@ public class GridExporter<T> implements Serializable {
           Method getValueProviderMethod = BasicRenderer.class.getDeclaredMethod("getValueProvider");
           getValueProviderMethod.setAccessible(true);
           @SuppressWarnings("unchecked")
-          ValueProvider<T,?> vp = (ValueProvider<T, ?>) getValueProviderMethod.invoke(renderer);
+          ValueProvider<T, ?> vp = (ValueProvider<T, ?>) getValueProviderMethod.invoke(renderer);
           value = vp.apply(item);
-        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (NoSuchMethodException
+            | SecurityException
+            | IllegalAccessException
+            | IllegalArgumentException
+            | InvocationTargetException e) {
           throw new IllegalStateException("Problem obtaining value or exporting", e);
         }
       }
     }
 
-    if (value==null) {
-      if (nullValueSupplier!=null) {
+    if (value == null) {
+      if (nullValueSupplier != null) {
         value = nullValueSupplier.get();
       } else {
         String colKey = "n/a";
         if (column.getKey() != null) {
           colKey = column.getKey();
         }
-        throw new IllegalStateException("It's not possible to obtain a value for column with key '" + colKey + "', please set a value provider by calling setExportValue()");
+        throw new IllegalStateException(
+            "It's not possible to obtain a value for column with key '"
+                + colKey
+                + "', please set a value provider by calling setExportValue()");
       }
     }
     return value;
@@ -269,6 +277,7 @@ public class GridExporter<T> implements Serializable {
 
   /**
    * Sets the title of the exported file
+   *
    * @param title
    */
   public void setTitle(String title) {
@@ -281,6 +290,7 @@ public class GridExporter<T> implements Serializable {
 
   /**
    * Sets the filename of the exported file
+   *
    * @param fileName
    */
   public void setFileName(String fileName) {
@@ -293,6 +303,7 @@ public class GridExporter<T> implements Serializable {
 
   /**
    * If true, it will automatically generate export buttons in the asociated grid
+   *
    * @param autoAttachExportButtons
    */
   public void setAutoAttachExportButtons(boolean autoAttachExportButtons) {
@@ -304,8 +315,9 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * Sets a map that will contain additional place holders that will be replaced with values
-   * when processing the exported file
+   * Sets a map that will contain additional place holders that will be replaced with values when
+   * processing the exported file
+   *
    * @param additionalPlaceHolders
    */
   public void setAdditionalPlaceHolders(Map<String, String> additionalPlaceHolders) {
@@ -318,6 +330,7 @@ public class GridExporter<T> implements Serializable {
 
   /**
    * Configures the excel sheet that will be inspected for placeholders to export the data
+   *
    * @param sheetNumber
    */
   public void setSheetNumber(int sheetNumber) {
@@ -329,8 +342,9 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * If true the title cell will be merged with the next ones to create a single title cell
-   * that will span across the columns
+   * If true the title cell will be merged with the next ones to create a single title cell that
+   * will span across the columns
+   *
    * @param autoMergeTitle
    */
   public void setAutoMergeTitle(boolean autoMergeTitle) {
@@ -378,8 +392,9 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * Configure a value provider for a given column. If there is a value provider,
-   * that will be taken into account when exporting the column
+   * Configure a value provider for a given column. If there is a value provider, that will be taken
+   * into account when exporting the column
+   *
    * @param column
    * @param vp
    */
@@ -389,6 +404,7 @@ public class GridExporter<T> implements Serializable {
 
   /**
    * Configure if the column is exported or not
+   *
    * @param column
    * @param export: true will be included in the exported file, false will not be included
    */
@@ -401,25 +417,28 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * If the column is based on a String, it configures a DecimalFormat to parse a number from the value
-   * of the column so it can be converted to a Double, and then allows to specify the excel format
-   * to be applied to the cell when exported to excel, so the resulting cell is not a string
+   * If the column is based on a String, it configures a DecimalFormat to parse a number from the
+   * value of the column so it can be converted to a Double, and then allows to specify the excel
+   * format to be applied to the cell when exported to excel, so the resulting cell is not a string
    * but a number that can be used in formulas.
+   *
    * @param column
    * @param decimalFormat
    * @param excelFormat
    */
-  public void setNumberColumnFormat(Column<T> column, DecimalFormat decimalFormat, String excelFormat) {
+  public void setNumberColumnFormat(
+      Column<T> column, DecimalFormat decimalFormat, String excelFormat) {
     ComponentUtil.setData(column, COLUMN_PARSING_FORMAT_PATTERN_DATA, decimalFormat);
     ComponentUtil.setData(column, COLUMN_EXCEL_FORMAT_DATA, excelFormat);
     ComponentUtil.setData(column, COLUMN_TYPE_DATA, COLUMN_TYPE_NUMBER);
   }
 
   /**
-   * If the column is based on a String, it configures a DateFormat to parse a date from the value of
-   * the column so it can be converted to a java.util.Date, and then allows to specify the excel
+   * If the column is based on a String, it configures a DateFormat to parse a date from the value
+   * of the column so it can be converted to a java.util.Date, and then allows to specify the excel
    * format to be applied to the cell when exported to excel, so the resulting cell is not a string
    * but a date that can be used in formulas.
+   *
    * @param column
    * @param dateFormat
    * @param excelFormat
@@ -431,9 +450,10 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * If the column is based on a number attribute of the item, rendered with a NumberRenderer, it configures
-   * the excel format to be applied to the cell when exported to excel, so the resulting cell is not a string
-   * but a number that can be used in formulas.
+   * If the column is based on a number attribute of the item, rendered with a NumberRenderer, it
+   * configures the excel format to be applied to the cell when exported to excel, so the resulting
+   * cell is not a string but a number that can be used in formulas.
+   *
    * @param column
    * @param excelFormat
    */
@@ -443,9 +463,10 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * If the column is based on a LocalDate attribute of the item, rendered with a LocalDateRenderer, it configures
-   * the excel format to be applied to the cell when exported to excel, so the resulting cell is not a string
-   * but a date that can be used in formulas.
+   * If the column is based on a LocalDate attribute of the item, rendered with a LocalDateRenderer,
+   * it configures the excel format to be applied to the cell when exported to excel, so the
+   * resulting cell is not a string but a date that can be used in formulas.
+   *
    * @param column
    * @param excelFormat
    */
@@ -455,8 +476,9 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * Configures the exporter to use a custom string for a specific column's header. Usefull when the header
-   * is a custom component.
+   * Configures the exporter to use a custom string for a specific column's header. Usefull when the
+   * header is a custom component.
+   *
    * @param column
    * @param header
    */
@@ -465,8 +487,9 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * Configures the exporter to use a custom string for a specific column's footer. Usefull when the footer
-   * is a custom component.
+   * Configures the exporter to use a custom string for a specific column's footer. Usefull when the
+   * footer is a custom component.
+   *
    * @param column
    * @param header
    */
@@ -486,7 +509,8 @@ public class GridExporter<T> implements Serializable {
 
   private int getColumnPosition(Column<T> column) {
     return Optional.ofNullable(ComponentUtil.getData(column, COLUMN_POSITION))
-        .map(value -> Integer.class.cast(value)).orElse(Integer.MAX_VALUE);
+        .map(value -> Integer.class.cast(value))
+        .orElse(Integer.MAX_VALUE);
   }
 
   public void setColumns(List<Grid.Column<T>> columns) {
@@ -499,11 +523,14 @@ public class GridExporter<T> implements Serializable {
 
   /**
    * Get columns in the positions specified by {@link GridExporter.setColumnPosition}
+   *
    * @return
    */
   public List<Column<T>> getColumnsOrdered() {
-    return columns == null ? columns
-        : columns.stream().sorted(Comparator.comparing(this::getColumnPosition))
-        .collect(Collectors.toList());
+    return columns == null
+        ? columns
+        : columns.stream()
+            .sorted(Comparator.comparing(this::getColumnPosition))
+            .collect(Collectors.toList());
   }
 }
