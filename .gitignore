@@ -15,3 +15,4 @@ tsconfig.json
 types.d.ts
 frontend/generated/
 frontend/index.html
+src/main/dev-bundle/*
