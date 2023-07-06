@@ -155,7 +155,7 @@ abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
               exporter.grid.getDataProvider().size(new Query(filter)),
               exporter.grid.getDataCommunicator().getBackEndSorting(),
               exporter.grid.getDataCommunicator().getInMemorySorting(),
-              null);
+              filter);
       dataStream = getDataStream(streamQuery);
     }
     return dataStream;
