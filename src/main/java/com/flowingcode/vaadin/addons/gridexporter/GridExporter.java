@@ -383,7 +383,7 @@ public class GridExporter<T> implements Serializable {
    * @param column
    * @param vp
    */
-  public void setExportValue(Column<T> column, ValueProvider<T, String> vp) {
+  public void setExportValue(Column<T> column, ValueProvider<T, ?> vp) {
     ComponentUtil.setData(column, COLUMN_VALUE_PROVIDER_DATA, vp);
   }
 
