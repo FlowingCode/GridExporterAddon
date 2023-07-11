@@ -38,7 +38,7 @@
 		<url>https://github.com/FlowingCode/GridExporterAddon</url>
 		<connection>scm:git:git://github.com/FlowingCode/GridExporterAddon.git</connection>
 		<developerConnection>scm:git:ssh://git@github.com:/FlowingCode/GridExporterAddon.git</developerConnection>
-		<tag>master</tag>
+		<tag>1.x</tag>
 	</scm>
 
 	<dependencyManagement>
