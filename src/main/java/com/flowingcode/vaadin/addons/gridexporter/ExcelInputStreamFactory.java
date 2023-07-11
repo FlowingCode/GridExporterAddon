@@ -264,12 +264,15 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     if (value == null) {
       PoiHelper.setBlank(cell);
     } else if (value instanceof Number) {
+      excelFormat = (excelFormat!=null)?excelFormat:"0";
       applyExcelFormat(cell, excelFormat);
       cell.setCellValue(((Number) value).doubleValue());
     } else if (value instanceof Date) {
+      excelFormat = (excelFormat!=null)?excelFormat:"dd/MM/yyyy";
       applyExcelFormat(cell, excelFormat);
       cell.setCellValue((Date) value);
     } else if (value instanceof LocalDate) {
+      excelFormat = (excelFormat!=null)?excelFormat:"dd/MM/yyyy";
       applyExcelFormat(cell, excelFormat);
       cell.setCellValue(
           Date.from(((LocalDate) value).atStartOfDay(ZoneId.systemDefault()).toInstant()));
