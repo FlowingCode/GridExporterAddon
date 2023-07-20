@@ -28,8 +28,11 @@ import com.vaadin.flow.data.provider.AbstractBackEndDataProvider;
 import com.vaadin.flow.data.provider.DataCommunicator;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.Query;
+import com.vaadin.flow.data.provider.hierarchy.HierarchicalDataProvider;
+import com.vaadin.flow.data.provider.hierarchy.HierarchicalQuery;
 import com.vaadin.flow.server.InputStreamFactory;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -144,7 +147,11 @@ abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
     }
 
     Stream<T> dataStream;
-    if (dataProvider instanceof AbstractBackEndDataProvider) {
+
+    // special handling for hierarchical data provider
+    if (exporter.grid.getDataProvider() instanceof HierarchicalDataProvider) {
+      return obtainFlattenedHierarchicalDataStream(exporter.grid);
+    } else if (dataProvider instanceof AbstractBackEndDataProvider) {
       GridLazyDataView<T> gridLazyDataView = exporter.grid.getLazyDataView();
       dataStream = gridLazyDataView.getItems();
     } else {
@@ -159,5 +166,52 @@ abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
       dataStream = getDataStream(streamQuery);
     }
     return dataStream;
+  }
+
+  protected Stream<T> obtainFlattenedHierarchicalDataStream(final Grid<T> grid) {
+    ArrayList<T> flattenedData = fetchDataRecursive(grid, null);
+    return flattenedData.stream();
+  }
+
+  protected ArrayList<T> fetchDataRecursive(final Grid<T> grid, T parent) {
+    ArrayList<T> result = new ArrayList<>();
+
+    if (parent != null) result.add(parent);
+
+    HierarchicalDataProvider<T, ?> hDataProvider =
+        (HierarchicalDataProvider<T, ?>) grid.getDataProvider();
+
+    int childCount =
+        hDataProvider.getChildCount(
+            new HierarchicalQuery<>(
+                0,
+                Integer.MAX_VALUE,
+                grid.getSortOrder().stream()
+                    .flatMap(so -> so.getSorted().getSortOrder(so.getDirection()))
+                    .collect(Collectors.toList()),
+                grid.getDataCommunicator().getInMemorySorting(),
+                null,
+                parent));
+
+    if (childCount > 0) {
+      hDataProvider
+          .fetchChildren(
+              new HierarchicalQuery<>(
+                  0,
+                  Integer.MAX_VALUE,
+                  grid.getSortOrder().stream()
+                      .flatMap(so -> so.getSorted().getSortOrder(so.getDirection()))
+                      .collect(Collectors.toList()),
+                  grid.getDataCommunicator().getInMemorySorting(),
+                  null,
+                  parent))
+          .forEach(
+              child -> {
+                ArrayList<T> subTree = fetchDataRecursive(grid, child);
+                result.addAll(subTree);
+              });
+    }
+
+    return result;
   }
 }
