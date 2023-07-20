@@ -37,6 +37,7 @@ public class GridExporterDemoView extends TabbedDemo {
     addDemo(GridExporterSimpleCustomTemplateDemo.class);
     addDemo(GridExporterCustomLinkDemo.class);
     addDemo(GridExporterCustomColumnsDemo.class);
+    addDemo(GridExporterHierarchicalDataDemo.class);
     setSizeFull();
   }
 }
