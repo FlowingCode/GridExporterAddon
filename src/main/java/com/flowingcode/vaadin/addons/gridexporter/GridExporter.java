@@ -183,17 +183,23 @@ public class GridExporter<T> implements Serializable {
       if (propertyDefinition.isPresent()) {
         value = propertyDefinition.get().getGetter().apply(item);
       } else {
-        LOGGER.warn("Column key: " + column.getKey() + " is a property which cannot be found");
+        LOGGER.debug("Column key: " + column.getKey() + " is a property which cannot be found");
       }
     }
 
     // if the value still couldn't be retrieved then if the renderer is a LitRenderer, take the
     // value only
-    // if there is one value provider
     if (value == null && column.getRenderer() instanceof LitRenderer) {
       LitRenderer<T> r = (LitRenderer<T>) column.getRenderer();
+      // if there is one value provider
       if (r.getValueProviders().values().size() == 1) {
         value = r.getValueProviders().values().iterator().next().apply(item);
+      }
+      // the hierarchy column defines two value providers: "children" that serves the number of
+      // children and "name" that serves the shown value.
+      // so we need to get the value provider named "name" and returning its value
+      else if (r.getValueProviders().containsKey("name")) {
+        value = r.getValueProviders().get("name").apply(item);
       }
     }
 
