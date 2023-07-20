@@ -39,15 +39,19 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.ConditionalFormatting;
 import org.apache.poi.ss.usermodel.DataFormat;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.SheetConditionalFormatting;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.CellAddress;
@@ -100,7 +104,12 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       cell = findCellWithPlaceHolder(sheet, exporter.dataPlaceHolder);
       int[] dataStartingColumn = new int[1];
       dataStartingColumn[0] = cell.getColumnIndex();
-      fillData(sheet, cell, exporter.grid.getDataProvider(), titleCell != null);
+
+      // initialize the data range with tne coordinates of tha data placeholder cell
+      CellRangeAddress dataRange = new CellRangeAddress(cell.getRowIndex(), cell.getRowIndex(), cell.getColumnIndex(), cell.getColumnIndex());
+      fillData(sheet, cell, exporter.grid.getDataProvider(), dataRange, titleCell != null);
+
+      applyConditionalFormattings(sheet, dataRange);
 
       cell = findCellWithPlaceHolder(sheet, exporter.footersPlaceHolder);
       List<Pair<String, Column<T>>> footers = getGridFooters(exporter.grid);
@@ -157,8 +166,19 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     return in;
   }
 
+  private void applyConditionalFormattings(Sheet sheet, CellRangeAddress targetCellRange) {
+    SheetConditionalFormatting sheetCondFormatting = sheet.getSheetConditionalFormatting();
+
+    for(int i = 0; i < sheetCondFormatting.getNumConditionalFormattings(); i++) {
+      // override range for all conditional formattings with the range of the resulting data
+      ConditionalFormatting condFormatting = sheetCondFormatting.getConditionalFormattingAt(i);
+      condFormatting.setFormattingRanges(ArrayUtils.toArray(targetCellRange));
+    }
+
+  }
+
   private void fillData(
-      Sheet sheet, Cell dataCell, DataProvider<T, ?> dataProvider, boolean titleExists) {
+      Sheet sheet, Cell dataCell, DataProvider<T, ?> dataProvider, CellRangeAddress dataRange, boolean titleExists) {
     Stream<T> dataStream = obtainDataStream(dataProvider);
 
     boolean[] notFirstRow = new boolean[1];
@@ -176,10 +196,15 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
             Row newRow = sheet.createRow(startingCell[0].getRowIndex() + 1);
             startingCell[0] = newRow.createCell(startingCell[0].getColumnIndex());
             startingCell[0].setCellStyle(cellStyle);
+            // update the data range by updating last row
+            dataRange.setLastRow(dataRange.getLastRow() + 1);
           }
           buildRow(t, sheet, startingCell[0]);
           notFirstRow[0] = true;
         });
+    // since we initialized the cell range with the data placeholder cell, we use
+    // the existing 'getLastColumn' to keep the offset of the data range
+    dataRange.setLastColumn(dataRange.getLastColumn() + exporter.getColumns().size() - 1);
   }
 
   @SuppressWarnings("unchecked")
