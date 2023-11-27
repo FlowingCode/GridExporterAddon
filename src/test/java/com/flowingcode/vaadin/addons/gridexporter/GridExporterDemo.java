@@ -20,10 +20,16 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.flowingcode.vaadin.addons.demo.DemoSource;
+import com.flowingcode.vaadin.addons.fontawesome.FontAwesome;
 import com.github.javafaker.Faker;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -31,6 +37,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
@@ -74,6 +81,27 @@ public class GridExporterDemo extends Div {
     exporter.setTitle("People information");
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
+
+    TextField filterField = new TextField();
+    filterField.setPlaceholder("Filter by");
+    filterField.setWidth("120px");
+
+    Select<String> shareSelect = new Select<>();
+    shareSelect.setItems("Whatsapp", "Facebook", "X (Twitter)");
+    shareSelect.setWidth("120px");
+    
+    Anchor zipLink = new Anchor("", FontAwesome.Regular.FILE_ZIPPER.create());
+    zipLink.setTitle("Download zip file");
+    zipLink.getElement().setAttribute("download", true);
+
+    exporter.setFooterToolbarItems(
+        List.of(new FooterToolbarItem(zipLink, FooterToolbarItemPosition.EXPORT_BUTTON),
+            new FooterToolbarItem(new Button("Share", VaadinIcon.SHARE.create())),
+            new FooterToolbarItem(shareSelect),
+            new FooterToolbarItem(filterField, FooterToolbarItemPosition.BEFORE_EXPORT_BUTTONS),
+            new FooterToolbarItem(new Button("Filter"),
+                FooterToolbarItemPosition.BEFORE_EXPORT_BUTTONS)));
+
     add(grid);
   }
 }
