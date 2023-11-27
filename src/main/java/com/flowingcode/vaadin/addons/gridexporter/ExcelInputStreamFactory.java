@@ -60,7 +60,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author mlope
+ * @author mlopez
  */
 @SuppressWarnings("serial")
 class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
