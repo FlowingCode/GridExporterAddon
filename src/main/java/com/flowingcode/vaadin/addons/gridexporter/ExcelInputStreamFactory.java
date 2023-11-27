@@ -59,7 +59,7 @@ import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.provider.DataProvider;
 
 /**
- * @author mlope
+ * @author mlopez
  */
 @SuppressWarnings("serial")
 class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
