@@ -27,7 +27,6 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.binder.PropertyDefinition;
 import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.renderer.BasicRenderer;
@@ -101,6 +100,8 @@ public class GridExporter<T> implements Serializable {
 
   private ButtonsAlignment buttonsAlignment = ButtonsAlignment.RIGHT;
 
+  private List<FooterToolbarItem> footerToolbarItems;
+
   private GridExporter(Grid<T> grid) {
     this.grid = grid;
   }
@@ -115,37 +116,46 @@ public class GridExporter<T> implements Serializable {
     grid.getElement()
         .addAttachListener(
             ev -> {
+              FooterToolbar footerToolbar = new FooterToolbar();
+
               if (exporter.autoAttachExportButtons) {
-                HorizontalLayout hl = new HorizontalLayout();
                 if (exporter.isExcelExportEnabled()) {
                   Anchor excelLink = new Anchor("", FontAwesome.Regular.FILE_EXCEL.create());
                   excelLink.setHref(exporter.getExcelStreamResource(excelCustomTemplate));
                   excelLink.getElement().setAttribute("download", true);
-                  hl.add(excelLink);
+                  footerToolbar.add(
+                      new FooterToolbarItem(excelLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
                 if (exporter.isDocxExportEnabled()) {
                   Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_WORD.create());
                   docLink.setHref(exporter.getDocxStreamResource(docxCustomTemplate));
                   docLink.getElement().setAttribute("download", true);
-                  hl.add(docLink);
+                  footerToolbar
+                      .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
                 if (exporter.isPdfExportEnabled()) {
                   Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_PDF.create());
                   docLink.setHref(exporter.getPdfStreamResource(docxCustomTemplate));
                   docLink.getElement().setAttribute("download", true);
-                  hl.add(docLink);
+                  footerToolbar
+                      .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
                 if (exporter.isCsvExportEnabled()) {
                   Anchor csvLink = new Anchor("", FontAwesome.Regular.FILE_LINES.create());
                   csvLink.setHref(exporter.getCsvStreamResource());
                   csvLink.getElement().setAttribute("download", true);
-                  hl.add(csvLink);
+                  footerToolbar
+                      .add(new FooterToolbarItem(csvLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
-                hl.setSizeFull();
+              }
 
-                hl.setJustifyContentMode(exporter.getJustifyContentMode());
+              if (exporter.footerToolbarItems != null) {
+                footerToolbar.add(exporter.footerToolbarItems);
+              }
 
-                GridHelper.addToolbarFooter(grid, hl);
+              if (footerToolbar.hasItems()) {
+                footerToolbar.getContent().setJustifyContentMode(exporter.getJustifyContentMode());
+                GridHelper.addToolbarFooter(grid, footerToolbar);
               }
             });
     return exporter;
@@ -539,4 +549,9 @@ public class GridExporter<T> implements Serializable {
             .sorted(Comparator.comparing(this::getColumnPosition))
             .collect(Collectors.toList());
   }
+
+  public void setFooterToolbarItems(List<FooterToolbarItem> footerToolbarItems) {
+    this.footerToolbarItems = footerToolbarItems;
+  }
+
 }
