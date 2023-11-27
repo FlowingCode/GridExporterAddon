@@ -20,12 +20,6 @@
 /** */
 package com.flowingcode.vaadin.addons.gridexporter;
 
-import com.vaadin.flow.component.ComponentUtil;
-import com.vaadin.flow.component.grid.ColumnTextAlign;
-import com.vaadin.flow.component.grid.Grid.Column;
-import com.vaadin.flow.data.binder.BeanPropertySet;
-import com.vaadin.flow.data.binder.PropertySet;
-import com.vaadin.flow.data.provider.DataProvider;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
@@ -39,7 +33,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -58,6 +51,12 @@ import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
+import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.data.binder.BeanPropertySet;
+import com.vaadin.flow.data.binder.PropertySet;
+import com.vaadin.flow.data.provider.DataProvider;
 
 /**
  * @author mlope
@@ -107,10 +106,17 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
 
       // initialize the data range with tne coordinates of tha data placeholder cell
       CellRangeAddress dataRange = new CellRangeAddress(cell.getRowIndex(), cell.getRowIndex(), cell.getColumnIndex(), cell.getColumnIndex());
-      fillData(sheet, cell, exporter.grid.getDataProvider(), dataRange, titleCell != null);
+      
+      Sheet tempSheet = wb.cloneSheet(exporter.sheetNumber);
+      
+      int lastRow = fillData(sheet, cell, exporter.grid.getDataProvider(), dataRange, titleCell != null);
 
       applyConditionalFormattings(sheet, dataRange);
 
+      copyBottomOfSheetStartingOnRow(wb, tempSheet, sheet, cell.getRowIndex()+1, lastRow);
+      
+      wb.removeSheetAt(exporter.sheetNumber + 1);
+      
       cell = findCellWithPlaceHolder(sheet, exporter.footersPlaceHolder);
       List<Pair<String, Column<T>>> footers = getGridFooters(exporter.grid);
       if (cell != null) {
@@ -166,6 +172,54 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     return in;
   }
 
+  private void copyBottomOfSheetStartingOnRow(Workbook workbook, Sheet sourceSheet,
+      Sheet targetSheet, int rowIndex, int targetRow) {
+    int fRow = rowIndex;
+    int lRow = sourceSheet.getLastRowNum();
+    for (int iRow = fRow; iRow <= lRow; iRow++) {
+      Row row = sourceSheet.getRow(iRow);
+      Row myRow = targetSheet.createRow(targetRow++);
+      if (row != null) {
+        short fCell = row.getFirstCellNum();
+        short lCell = row.getLastCellNum();
+        for (int iCell = fCell; iCell < lCell; iCell++) {
+          Cell cell = row.getCell(iCell);
+          Cell newCell = myRow.createCell(iCell);
+          newCell.setCellStyle(cell.getCellStyle());
+          if (cell != null) {
+            switch (cell.getCellType()) {
+              case BLANK:
+                newCell.setCellValue("");
+                break;
+
+              case BOOLEAN:
+                newCell.setCellValue(cell.getBooleanCellValue());
+                break;
+
+              case ERROR:
+                newCell.setCellErrorValue(cell.getErrorCellValue());
+                break;
+
+              case FORMULA:
+                newCell.setCellFormula(cell.getCellFormula());
+                break;
+
+              case NUMERIC:
+                newCell.setCellValue(cell.getNumericCellValue());
+                break;
+
+              case STRING:
+                newCell.setCellValue(cell.getStringCellValue());
+                break;
+              default:
+                newCell.setCellFormula(cell.getCellFormula());
+            }
+          }
+        }
+      }
+    }
+  }
+
   private void applyConditionalFormattings(Sheet sheet, CellRangeAddress targetCellRange) {
     SheetConditionalFormatting sheetCondFormatting = sheet.getSheetConditionalFormatting();
 
@@ -177,7 +231,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
 
   }
 
-  private void fillData(
+  private int fillData(
       Sheet sheet, Cell dataCell, DataProvider<T, ?> dataProvider, CellRangeAddress dataRange, boolean titleExists) {
     Stream<T> dataStream = obtainDataStream(dataProvider);
 
@@ -188,11 +242,6 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
         t -> {
           if (notFirstRow[0]) {
             CellStyle cellStyle = startingCell[0].getCellStyle();
-            int lastRow = sheet.getLastRowNum();
-            sheet.shiftRows(
-                startingCell[0].getRowIndex() + (titleExists ? 1 : 0),
-                lastRow,
-                (titleExists ? 1 : 0));
             Row newRow = sheet.createRow(startingCell[0].getRowIndex() + 1);
             startingCell[0] = newRow.createCell(startingCell[0].getColumnIndex());
             startingCell[0].setCellStyle(cellStyle);
@@ -205,6 +254,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     // since we initialized the cell range with the data placeholder cell, we use
     // the existing 'getLastColumn' to keep the offset of the data range
     dataRange.setLastColumn(dataRange.getLastColumn() + exporter.getColumns().size() - 1);
+    return startingCell[0].getRowIndex();
   }
 
   @SuppressWarnings("unchecked")
