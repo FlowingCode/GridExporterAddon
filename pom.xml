@@ -4,7 +4,7 @@
 
 	<groupId>org.vaadin.addons.flowingcode</groupId>
 	<artifactId>grid-exporter-addon</artifactId>
-	<version>2.1.1-SNAPSHOT</version>
+	<version>2.1.1</version>
 	<name>Grid Exporter Add-on</name>
 	<description>Grid Exporter Add-on for Vaadin Flow</description>
 
@@ -38,7 +38,7 @@
 		<url>https://github.com/FlowingCode/GridExporterAddon</url>
 		<connection>scm:git:git://github.com/FlowingCode/GridExporterAddon.git</connection>
 		<developerConnection>scm:git:ssh://git@github.com:/FlowingCode/GridExporterAddon.git</developerConnection>
-		<tag>master</tag>
+		<tag>grid-exporter-addon-2.1.1</tag>
 	</scm>
 
 	<dependencyManagement>
