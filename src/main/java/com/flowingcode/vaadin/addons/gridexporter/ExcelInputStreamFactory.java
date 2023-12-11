@@ -245,16 +245,16 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
             Row newRow = sheet.createRow(startingCell[0].getRowIndex() + 1);
             startingCell[0] = newRow.createCell(startingCell[0].getColumnIndex());
             startingCell[0].setCellStyle(cellStyle);
-            // update the data range by updating last row
-            dataRange.setLastRow(dataRange.getLastRow() + 1);
           }
+          // update the data range by updating last row
+          dataRange.setLastRow(dataRange.getLastRow() + 1);
           buildRow(t, sheet, startingCell[0]);
           notFirstRow[0] = true;
         });
     // since we initialized the cell range with the data placeholder cell, we use
     // the existing 'getLastColumn' to keep the offset of the data range
     dataRange.setLastColumn(dataRange.getLastColumn() + exporter.getColumns().size() - 1);
-    return startingCell[0].getRowIndex();
+    return dataRange.getLastRow();
   }
 
   @SuppressWarnings("unchecked")
