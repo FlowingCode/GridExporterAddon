@@ -235,22 +235,22 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       Sheet sheet, Cell dataCell, DataProvider<T, ?> dataProvider, CellRangeAddress dataRange, boolean titleExists) {
     Stream<T> dataStream = obtainDataStream(dataProvider);
 
-    boolean[] notFirstRow = new boolean[1];
-    Cell[] startingCell = new Cell[1];
-    startingCell[0] = dataCell;
-    dataStream.forEach(
-        t -> {
-          if (notFirstRow[0]) {
-            CellStyle cellStyle = startingCell[0].getCellStyle();
-            Row newRow = sheet.createRow(startingCell[0].getRowIndex() + 1);
-            startingCell[0] = newRow.createCell(startingCell[0].getColumnIndex());
-            startingCell[0].setCellStyle(cellStyle);
-          }
-          // update the data range by updating last row
-          dataRange.setLastRow(dataRange.getLastRow() + 1);
-          buildRow(t, sheet, startingCell[0]);
-          notFirstRow[0] = true;
-        });
+    boolean notFirstRow = false;
+    Cell startingCell = dataCell;
+
+    Iterable<T> items = dataStream::iterator;
+    for (T item : items) {
+      if (notFirstRow) {
+        CellStyle cellStyle = startingCell.getCellStyle();
+        Row newRow = sheet.createRow(startingCell.getRowIndex() + 1);
+        startingCell = newRow.createCell(startingCell.getColumnIndex());
+        startingCell.setCellStyle(cellStyle);
+      }
+      // update the data range by updating last row
+      dataRange.setLastRow(dataRange.getLastRow() + 1);
+      buildRow(item, sheet, startingCell);
+      notFirstRow = true;
+    }
     // since we initialized the cell range with the data placeholder cell, we use
     // the existing 'getLastColumn' to keep the offset of the data range
     dataRange.setLastColumn(dataRange.getLastColumn() + exporter.getColumns().size() - 1);
