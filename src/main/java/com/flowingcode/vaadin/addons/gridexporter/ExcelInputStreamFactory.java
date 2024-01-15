@@ -274,9 +274,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
               Cell currentCell = startingCell;
               if (startingCell.getColumnIndex() < currentColumn[0]) {
                 currentCell = startingCell.getRow().createCell(currentColumn[0]);
-                CellStyle newCellStyle = currentCell.getSheet().getWorkbook().createCellStyle();
-                newCellStyle.cloneStyleFrom(startingCell.getCellStyle());
-                currentCell.setCellStyle(newCellStyle);
+                currentCell.setCellStyle(startingCell.getCellStyle());
 
                 configureAlignment(column.getTextAlign(), currentCell);
               }
@@ -402,9 +400,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
                 sheet
                     .getRow(sheet.getActiveCell().getRow())
                     .createCell(sheet.getActiveCell().getColumn());
-            CellStyle newCellStyle = cell.getSheet().getWorkbook().createCellStyle();
-            newCellStyle.cloneStyleFrom(style);
-            cell.setCellStyle(newCellStyle);
+            cell.setCellStyle(style);
           }
           Object value =
               (isHeader
