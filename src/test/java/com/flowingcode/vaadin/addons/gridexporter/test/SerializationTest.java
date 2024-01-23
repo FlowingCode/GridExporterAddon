@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.charset.StandardCharsets;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -46,7 +47,9 @@ public class SerializationTest {
   public void testSerialization() throws ClassNotFoundException, IOException {
     try {
       Grid<String> grid = new Grid<>();
-      testSerializationOf(GridExporter.createFor(grid));
+      GridExporter<String> exporter = GridExporter.createFor(grid);
+      exporter.setCsvCharset(() -> StandardCharsets.ISO_8859_1);
+      testSerializationOf(exporter);
     } catch (Exception e) {
       Assert.fail("Problem while testing serialization: " + e.getMessage());
     }

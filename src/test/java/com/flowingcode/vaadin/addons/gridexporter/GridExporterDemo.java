@@ -35,6 +35,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
@@ -81,6 +82,7 @@ public class GridExporterDemo extends Div {
     exporter.setTitle("People information");
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
+    exporter.setCsvCharset(() -> StandardCharsets.UTF_8);
 
     TextField filterField = new TextField();
     filterField.setPlaceholder("Filter by");

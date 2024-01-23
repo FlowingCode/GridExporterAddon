@@ -39,6 +39,7 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.Comparator;
@@ -101,6 +102,8 @@ public class GridExporter<T> implements Serializable {
   private ButtonsAlignment buttonsAlignment = ButtonsAlignment.RIGHT;
 
   private List<FooterToolbarItem> footerToolbarItems;
+
+  private SerializableSupplier<Charset> csvCharset;
 
   private GridExporter(Grid<T> grid) {
     this.grid = grid;
@@ -552,6 +555,19 @@ public class GridExporter<T> implements Serializable {
 
   public void setFooterToolbarItems(List<FooterToolbarItem> footerToolbarItems) {
     this.footerToolbarItems = footerToolbarItems;
+  }
+
+  /**
+   * Charset to use when exporting the CSV file.
+   * 
+   * @return CSV file charset or default one.
+   */
+  public Charset getCsvCharset() {
+    return csvCharset == null ? Charset.defaultCharset() : csvCharset.get();
+  }
+
+  public void setCsvCharset(SerializableSupplier<Charset> charset) {
+    this.csvCharset = charset;
   }
 
 }
