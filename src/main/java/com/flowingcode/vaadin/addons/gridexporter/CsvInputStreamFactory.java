@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
@@ -72,7 +73,14 @@ class CsvInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       PipedOutputStream out = new PipedOutputStream(in);
       new Thread(
               () -> {
-                try (CSVWriter writer = new CSVWriter(new OutputStreamWriter(out))) {
+                try (
+                  OutputStreamWriter os = new OutputStreamWriter(out, exporter.getCsvCharset());
+                  CSVWriter writer = new CSVWriter(os)) {
+                  if (StandardCharsets.UTF_8.equals(exporter.getCsvCharset())) {
+                    // write BOM
+                    os.write(0xfeff);
+                  }
+
                   writer.writeNext(headers);
                   writer.writeAll(data);
                   if (footers.length > 0) {
