@@ -111,7 +111,8 @@ public class GridExporterSimpleCustomTemplateDemo extends Div {
     exporter.setCsvExportEnabled(false);
     exporter.setNumberColumnFormat(minBudgetColumn, "$#.###,##");
     exporter.setNumberColumnFormat(maxBudgetColumn, decimalFormat, "$#,###.##");
-    exporter.setNumberColumnFormatProvider(quantityColumn, decimalFormat, (person)->person.getBudget()>50000?"#,###.## \"kg\"":"#,###.## \"l\"");
+    exporter.setNumberColumnFormatProvider(quantityColumn, decimalFormat, (person)->person==null?"":
+      person.getBudget()>50000?"#,###.## \"kg\"":"#,###.## \"l\"");
     exporter.setDateColumnFormat(dateColumn1, "dd/MM/yyyy");
     exporter.setDateColumnFormat(dateColumn2, new SimpleDateFormat("dd/MM/yyyy"), "dd/MM/yyyy");
     exporter.setFileName(
