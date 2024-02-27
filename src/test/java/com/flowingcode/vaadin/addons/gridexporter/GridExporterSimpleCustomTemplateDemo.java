@@ -41,6 +41,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -68,6 +69,10 @@ public class GridExporterSimpleCustomTemplateDemo extends Div {
     Column<Person> maxBudgetColumn =
         grid.addColumn(item -> decimalFormat.format(item.getBudget() + (item.getBudget() / 2)))
             .setHeader("Max. Budget")
+            .setTextAlign(ColumnTextAlign.END);
+    Column<Person> quantityColumn =
+        grid.addColumn(item -> decimalFormat.format(item.getBudget() + (new Random().nextInt(10))))
+            .setHeader("Quantity")
             .setTextAlign(ColumnTextAlign.END);
     Column<Person> dateColumn1 =
         grid.addColumn(new LocalDateRenderer<>(Person::getFavDate, "dd/MM/yyyy"))
@@ -104,6 +109,7 @@ public class GridExporterSimpleCustomTemplateDemo extends Div {
     exporter.setCsvExportEnabled(false);
     exporter.setNumberColumnFormat(minBudgetColumn, "$#.###,##");
     exporter.setNumberColumnFormat(maxBudgetColumn, decimalFormat, "$#,###.##");
+    exporter.setNumberColumnFormatProvider(quantityColumn, decimalFormat, (person)->person.getBudget()>50000?"#,###.## \"kg\"":"#,###.## \"l\"");
     exporter.setDateColumnFormat(dateColumn1, "dd/MM/yyyy");
     exporter.setDateColumnFormat(dateColumn2, new SimpleDateFormat("dd/MM/yyyy"), "dd/MM/yyyy");
     exporter.setFileName(

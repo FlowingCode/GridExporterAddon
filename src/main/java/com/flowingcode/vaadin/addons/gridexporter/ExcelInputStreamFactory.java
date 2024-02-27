@@ -30,7 +30,9 @@ import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
@@ -57,6 +59,7 @@ import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.provider.DataProvider;
+import com.vaadin.flow.function.ValueProvider;
 
 /**
  * @author mlopez
@@ -66,6 +69,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ExcelInputStreamFactory.class);
   private static final String DEFAULT_TEMPLATE = "/template.xlsx";
+  private static final String COLUMN_CELLSTYLE_MAP = "colum-cellstyle-map";
 
   public ExcelInputStreamFactory(GridExporter<T> exporter, String template) {
     super(exporter, template, DEFAULT_TEMPLATE);
@@ -279,7 +283,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
                 configureAlignment(column.getTextAlign(), currentCell);
               }
               currentColumn[0] = currentColumn[0] + 1;
-              buildCell(value, currentCell, column);
+              buildCell(value, currentCell, column, item);
             });
   }
 
@@ -331,22 +335,35 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     }
   }
 
-  private void buildCell(Object value, Cell cell, Column<T> column) {
-    String excelFormat =
-        (String) ComponentUtil.getData(column, GridExporter.COLUMN_EXCEL_FORMAT_DATA);
+  @SuppressWarnings("unchecked")
+  private void buildCell(Object value, Cell cell, Column<T> column, T item) {
+    ValueProvider<T,String> provider = null;
+    provider = (ValueProvider<T, String>) ComponentUtil.getData(column, GridExporter.COLUMN_EXCEL_FORMAT_DATA_PROVIDER);
+    String excelFormat;
+    Map<String,CellStyle> cellStyles = (Map<String, CellStyle>) ComponentUtil.getData(column, COLUMN_CELLSTYLE_MAP);
+    if (cellStyles==null) {
+      cellStyles = new HashMap<>();
+      ComponentUtil.setData(column, COLUMN_CELLSTYLE_MAP, cellStyles);
+    }
+    if (provider!=null) {
+      excelFormat = provider.apply(item);
+    } else {
+      excelFormat =
+          (String) ComponentUtil.getData(column, GridExporter.COLUMN_EXCEL_FORMAT_DATA);
+    }
     if (value == null) {
       PoiHelper.setBlank(cell);
     } else if (value instanceof Number) {
       excelFormat = (excelFormat!=null)?excelFormat:"0";
-      applyExcelFormat(cell, excelFormat);
       cell.setCellValue(((Number) value).doubleValue());
+      applyExcelFormat(cell, excelFormat, cellStyles);
     } else if (value instanceof Date) {
       excelFormat = (excelFormat!=null)?excelFormat:"dd/MM/yyyy";
-      applyExcelFormat(cell, excelFormat);
+      applyExcelFormat(cell, excelFormat, cellStyles);
       cell.setCellValue((Date) value);
     } else if (value instanceof LocalDate) {
       excelFormat = (excelFormat!=null)?excelFormat:"dd/MM/yyyy";
-      applyExcelFormat(cell, excelFormat);
+      applyExcelFormat(cell, excelFormat, cellStyles);
       cell.setCellValue(
           Date.from(((LocalDate) value).atStartOfDay(ZoneId.systemDefault()).toInstant()));
     } else {
@@ -354,8 +371,16 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     }
   }
 
-  private void applyExcelFormat(Cell cell, String excelFormat) {
+  private void applyExcelFormat(Cell cell, String excelFormat, Map<String, CellStyle> cellStyles) {
     DataFormat format = cell.getSheet().getWorkbook().createDataFormat();
+    if (excelFormat!=null && cellStyles.get(excelFormat)==null) {
+      CellStyle cs = cell.getSheet().getWorkbook().createCellStyle();
+      cs.cloneStyleFrom(cell.getCellStyle());
+      cellStyles.put(excelFormat, cs);
+      cell.setCellStyle(cs);
+    } else if (excelFormat!=null) {
+      cell.setCellStyle(cellStyles.get(excelFormat));
+    }
     cell.getCellStyle().setDataFormat(format.getFormat(excelFormat));
   }
 
@@ -406,7 +431,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
               (isHeader
                   ? headerOrFooter.getLeft()
                   : transformToType(headerOrFooter.getLeft(), headerOrFooter.getRight()));
-          buildCell(value, cell, headerOrFooter.getRight());
+          buildCell(value, cell, headerOrFooter.getRight(), null);
           configureAlignment(headerOrFooter.getRight().getTextAlign(), cell);
           sheet.setActiveCell(
               new CellAddress(
