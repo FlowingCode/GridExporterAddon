@@ -82,6 +82,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       exporter.setColumns(
           exporter.grid.getColumns().stream()
               .filter(this::isExportable)
+              .peek(col->ComponentUtil.setData(col, COLUMN_CELLSTYLE_MAP, null))
               .collect(Collectors.toList()));
       Workbook wb = getBaseTemplateWorkbook();
       Sheet sheet = wb.getSheetAt(exporter.sheetNumber);
