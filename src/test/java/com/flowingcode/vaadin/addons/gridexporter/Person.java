@@ -19,9 +19,11 @@
  */
 package com.flowingcode.vaadin.addons.gridexporter;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
-public class Person {
+@SuppressWarnings("serial")
+public class Person implements Serializable {
 
   private String name;
   private String lastName;
