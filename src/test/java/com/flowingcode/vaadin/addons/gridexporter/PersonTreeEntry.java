@@ -19,7 +19,10 @@
  */
 package com.flowingcode.vaadin.addons.gridexporter;
 
-public class PersonTreeEntry {
+import java.io.Serializable;
+
+@SuppressWarnings("serial")
+public class PersonTreeEntry implements Serializable {
 
   private Integer age;
   private Person person;
