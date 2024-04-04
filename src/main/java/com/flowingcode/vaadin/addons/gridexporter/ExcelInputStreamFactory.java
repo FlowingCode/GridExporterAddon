@@ -417,6 +417,10 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     sheet.setActiveCell(headersOrFootersCell.getAddress());
     headersOrFooters.forEach(
         headerOrFooter -> {
+          if (!isHeader) {
+            // clear the styles before processing the column in the footer
+            ComponentUtil.setData(headerOrFooter.getRight(), COLUMN_CELLSTYLE_MAP, null);
+          }
           Cell cell =
               sheet
                   .getRow(sheet.getActiveCell().getRow())
