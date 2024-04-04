@@ -429,8 +429,8 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
                 sheet
                     .getRow(sheet.getActiveCell().getRow())
                     .createCell(sheet.getActiveCell().getColumn());
-            cell.setCellStyle(style);
           }
+          cell.setCellStyle(style);
           Object value =
               (isHeader
                   ? headerOrFooter.getLeft()
