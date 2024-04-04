@@ -45,6 +45,8 @@ import org.apache.poi.EncryptedDocumentException;
 @SuppressWarnings("serial")
 public class GridExporterCustomTemplateDemo extends Div {
 
+  private static final Faker faker = FakerInstance.get();
+
   public GridExporterCustomTemplateDemo() throws EncryptedDocumentException, IOException {
     Grid<Person> grid = new Grid<>(Person.class);
     DecimalFormat decimalFormat = new DecimalFormat("$#,###.##");
@@ -53,7 +55,7 @@ public class GridExporterCustomTemplateDemo extends Div {
             LitRenderer.<Person>of("<b>${item.name}</b>").withProperty("name", Person::getName))
         .setHeader("Name");
     grid.addColumn("lastName").setHeader("Last Name");
-    grid.addColumn(item -> Faker.instance().lorem().characters(30, 50)).setHeader("Big column");
+    grid.addColumn(item -> faker.lorem().characters(30, 50)).setHeader("Big column");
     Column<Person> budgetColumn =
         grid.addColumn(item -> decimalFormat.format(item.getBudget()))
             .setHeader("Budget")
@@ -65,7 +67,6 @@ public class GridExporterCustomTemplateDemo extends Div {
             .asLongStream()
             .mapToObj(
                 number -> {
-                  Faker faker = new Faker();
                   Double budget = faker.number().randomDouble(2, 10000, 100000);
                   total[0] = total[0].add(BigDecimal.valueOf(budget));
                   budgetColumn.setFooter(new DecimalFormat("$#,###.##").format(total[0]));
