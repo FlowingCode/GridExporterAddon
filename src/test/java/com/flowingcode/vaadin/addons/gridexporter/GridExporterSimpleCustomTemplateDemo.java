@@ -53,8 +53,9 @@ import org.apache.poi.EncryptedDocumentException;
 @SuppressWarnings("serial")
 public class GridExporterSimpleCustomTemplateDemo extends Div {
 
+  private static final Faker faker = FakerInstance.get();
+
   public GridExporterSimpleCustomTemplateDemo() throws EncryptedDocumentException, IOException {
-    Faker faker = new Faker();
     DecimalFormat decimalFormat = new DecimalFormat("$#,###.##");
     Grid<Person> grid = new Grid<>(Person.class);
     grid.removeAllColumns();

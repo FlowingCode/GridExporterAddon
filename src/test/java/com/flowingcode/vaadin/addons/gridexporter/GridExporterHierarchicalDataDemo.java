@@ -44,6 +44,8 @@ import org.apache.poi.EncryptedDocumentException;
 @SuppressWarnings("serial")
 public class GridExporterHierarchicalDataDemo extends Div {
 
+  private static final Faker faker = FakerInstance.get();
+
   private Map<Integer, PersonTreeEntry> ageToTreeEntryMap = new HashMap<>();
   private List<PersonTreeEntry> people;
 
@@ -74,7 +76,6 @@ public class GridExporterHierarchicalDataDemo extends Div {
             .asLongStream()
             .mapToObj(
                 number -> {
-                  Faker faker = new Faker();
                   Double budget = faker.number().randomDouble(2, 10000, 100000);
                   total[0] = total[0].add(BigDecimal.valueOf(budget));
                   budgetCol.setFooter("$" + total[0]);

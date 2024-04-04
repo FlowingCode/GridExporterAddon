@@ -41,6 +41,8 @@ import com.vaadin.flow.router.Route;
 @SuppressWarnings("serial")
 public class GridExporterBigDatasetDemo extends Div {
 
+  private static final Faker faker = FakerInstance.get();
+
   public GridExporterBigDatasetDemo() throws EncryptedDocumentException, IOException {
     Grid<Person> grid = new Grid<>(Person.class);
     grid.removeAllColumns();
@@ -55,7 +57,6 @@ public class GridExporterBigDatasetDemo extends Div {
             .asLongStream()
             .mapToObj(
                 number -> {
-                  Faker faker = new Faker();
                   Double budget = faker.number().randomDouble(2, 10000, 100000);
                   total[0] = total[0].add(BigDecimal.valueOf(budget));
                   budgetCol.setFooter("$" + total[0]);

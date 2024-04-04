@@ -43,6 +43,8 @@ import org.apache.poi.EncryptedDocumentException;
 @SuppressWarnings("serial")
 public class GridExporterCustomColumnsDemo extends Div {
 
+  private static final Faker faker = FakerInstance.get();
+
   public GridExporterCustomColumnsDemo() throws EncryptedDocumentException, IOException {
     Grid<Person> grid = new Grid<>(Person.class);
     grid.removeAllColumns();
@@ -58,7 +60,6 @@ public class GridExporterCustomColumnsDemo extends Div {
             .asLongStream()
             .mapToObj(
                 number -> {
-                  Faker faker = new Faker();
                   Double budget = faker.number().randomDouble(2, 10000, 100000);
                   total[0] = total[0].add(BigDecimal.valueOf(budget));
                   budgetColumn.setFooter("$" + total[0]);
