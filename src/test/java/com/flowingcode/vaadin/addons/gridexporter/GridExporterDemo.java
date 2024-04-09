@@ -21,6 +21,7 @@ package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.flowingcode.vaadin.addons.demo.DemoSource;
 import com.github.javafaker.Faker;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Div;
@@ -46,8 +47,11 @@ public class GridExporterDemo extends Div {
     grid.removeAllColumns();
     grid.setColumnReorderingAllowed(true);
     Column<Person> nameCol = grid.addColumn("name").setHeader("Name");
+    nameCol.setTextAlign(ColumnTextAlign.START);
     Column<Person> lastNameCol = grid.addColumn("lastName").setHeader("Last Name");
+    lastNameCol.setTextAlign(ColumnTextAlign.START);
     Column<Person> budgetCol = grid.addColumn(item -> "$" + item.getBudget()).setHeader("Budget");
+    budgetCol.setTextAlign(ColumnTextAlign.END);
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
     Stream<Person> stream =
