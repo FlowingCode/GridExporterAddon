@@ -70,7 +70,8 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ExcelInputStreamFactory.class);
   private static final String DEFAULT_TEMPLATE = "/template.xlsx";
   private static final String COLUMN_CELLSTYLE_MAP = "colum-cellstyle-map";
-
+  private static enum ExcelCellType {HEADER,CELL,FOOTER};
+  
   public ExcelInputStreamFactory(GridExporter<T> exporter, String template) {
     super(exporter, template, DEFAULT_TEMPLATE);
   }
@@ -281,7 +282,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
                 currentCell = startingCell.getRow().createCell(currentColumn[0]);
                 currentCell.setCellStyle(startingCell.getCellStyle());
 
-                configureAlignment(column.getTextAlign(), currentCell);
+                configureAlignment(column, currentCell, ExcelCellType.CELL);
               }
               currentColumn[0] = currentColumn[0] + 1;
               buildCell(value, currentCell, column, item);
@@ -320,20 +321,51 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     return result;
   }
 
-  protected void configureAlignment(ColumnTextAlign columnTextAlign, Cell currentCell) {
+  private void configureAlignment(Column<T> column, Cell currentCell, ExcelCellType type) {
+    ColumnTextAlign columnTextAlign = column.getTextAlign();
     switch (columnTextAlign) {
       case START:
-        currentCell.getCellStyle().setAlignment(HorizontalAlignment.LEFT);
+        if (!currentCell.getCellStyle().getAlignment().equals(HorizontalAlignment.LEFT)) {
+          currentCell.setCellStyle(
+              createOrRetrieveCellStyle(HorizontalAlignment.LEFT, currentCell, column, type));
+        }
         break;
       case CENTER:
-        currentCell.getCellStyle().setAlignment(HorizontalAlignment.CENTER);
+        if (!currentCell.getCellStyle().getAlignment().equals(HorizontalAlignment.CENTER)) {
+          currentCell.setCellStyle(
+              createOrRetrieveCellStyle(HorizontalAlignment.CENTER, currentCell, column, type));
+        }
         break;
       case END:
-        currentCell.getCellStyle().setAlignment(HorizontalAlignment.RIGHT);
+        if (!currentCell.getCellStyle().getAlignment().equals(HorizontalAlignment.RIGHT)) {
+          currentCell.setCellStyle(
+              createOrRetrieveCellStyle(HorizontalAlignment.RIGHT, currentCell, column, type));
+        }
         break;
       default:
-        currentCell.getCellStyle().setAlignment(HorizontalAlignment.LEFT);
+        currentCell.setCellStyle(currentCell.getCellStyle());
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private CellStyle createOrRetrieveCellStyle(HorizontalAlignment alignment, Cell currentCell,
+      Column<T> column, ExcelCellType type) {
+    Map<String, CellStyle> cellStyles =
+        (Map<String, CellStyle>) ComponentUtil.getData(column, COLUMN_CELLSTYLE_MAP);
+    if (cellStyles == null) {
+      cellStyles = new HashMap<>();
+      ComponentUtil.setData(column, COLUMN_CELLSTYLE_MAP, cellStyles);
+    }
+    CellStyle cellStyle;
+    if (cellStyles.get(type.name()) == null) {
+      cellStyle = currentCell.getSheet().getWorkbook().createCellStyle();
+      cellStyle.cloneStyleFrom(currentCell.getCellStyle());
+      cellStyle.setAlignment(alignment);
+      cellStyles.put(type.name(), cellStyle);
+    } else {
+      cellStyle = cellStyles.get(type.name());
+    }
+    return cellStyle;
   }
 
   @SuppressWarnings("unchecked")
@@ -437,7 +469,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
                   ? headerOrFooter.getLeft()
                   : transformToType(headerOrFooter.getLeft(), headerOrFooter.getRight()));
           buildCell(value, cell, headerOrFooter.getRight(), null);
-          configureAlignment(headerOrFooter.getRight().getTextAlign(), cell);
+          configureAlignment(headerOrFooter.getRight(), cell, isHeader?ExcelCellType.HEADER:ExcelCellType.FOOTER);
           sheet.setActiveCell(
               new CellAddress(
                   sheet.getActiveCell().getRow(), sheet.getActiveCell().getColumn() + 1));
