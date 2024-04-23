@@ -151,7 +151,7 @@
 		<dependency>
 		   <groupId>com.flowingcode.addons</groupId>
 		   <artifactId>font-awesome-iron-iconset</artifactId>
-		   <version>4.2.0</version>
+		   <version>5.2.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.vaadin.addons.flowingcode</groupId>
