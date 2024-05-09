@@ -109,6 +109,7 @@ public class GridExporterHierarchicalDataDemo extends Div {
     exporter.setTitle("People information grouped by age");
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
+    exporter.setAutoSizeColumns(false);
     add(grid);
   }
 }

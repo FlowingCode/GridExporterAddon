@@ -71,6 +71,7 @@ public class GridExporterCustomLinkDemo extends Div {
     this.setSizeFull();
     GridExporter<Person> exporter = GridExporter.createFor(grid);
     exporter.setAutoAttachExportButtons(false);
+    exporter.setAutoSizeColumns(false);
     exporter.setTitle("People information");
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));

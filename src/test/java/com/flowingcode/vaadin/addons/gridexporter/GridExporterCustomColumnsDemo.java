@@ -82,6 +82,7 @@ public class GridExporterCustomColumnsDemo extends Div {
     exporter.setAdditionalPlaceHolders(placeholders);
     exporter.setSheetNumber(1);
     exporter.setCsvExportEnabled(false);
+    exporter.setAutoSizeColumns(false);
     exporter.setTitle("People information");
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));

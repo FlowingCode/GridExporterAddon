@@ -108,6 +108,7 @@ public class GridExporterSimpleCustomTemplateDemo extends Div {
             grid, "/simple-custom-template.xlsx", "/simple-custom-template.docx");
     exporter.setSheetNumber(1);
     exporter.setCsvExportEnabled(false);
+    exporter.setAutoSizeColumns(false);
     exporter.setNumberColumnFormat(minBudgetColumn, "$#.###,##");
     exporter.setNumberColumnFormat(maxBudgetColumn, decimalFormat, "$#,###.##");
     exporter.setNumberColumnFormatProvider(quantityColumn, decimalFormat, (person)->person==null?"":
