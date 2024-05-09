@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("serial")
 public class GridExporter<T> implements Serializable {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ExcelInputStreamFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GridExporter.class);
 
   private boolean excelExportEnabled = true;
   private boolean docxExportEnabled = true;
@@ -167,7 +167,7 @@ public class GridExporter<T> implements Serializable {
 
   private JustifyContentMode getJustifyContentMode() {
     JustifyContentMode justifyContentMode;
-    if (this.buttonsAlignment == ButtonsAlignment.LEFT) {
+    if (buttonsAlignment == ButtonsAlignment.LEFT) {
       justifyContentMode = JustifyContentMode.START;
     } else {
       justifyContentMode = JustifyContentMode.END;
@@ -193,7 +193,7 @@ public class GridExporter<T> implements Serializable {
     // if there is a key, assume that the property can be retrieved from it
     if (value == null && column.getKey() != null) {
       Optional<PropertyDefinition<T, ?>> propertyDefinition =
-          this.propertySet.getProperty(column.getKey());
+          propertySet.getProperty(column.getKey());
       if (propertyDefinition.isPresent()) {
         value = propertyDefinition.get().getGetter().apply(item);
       } else {
@@ -219,7 +219,7 @@ public class GridExporter<T> implements Serializable {
 
     // at this point if the value is still null then take the only value from ColumPathRenderer VP
     if (value == null && column.getRenderer() instanceof Renderer) {
-      Renderer<T> renderer = (Renderer<T>) column.getRenderer();
+      Renderer<T> renderer = column.getRenderer();
       if (renderer instanceof ColumnPathRenderer) {
         try {
           Field provider = ColumnPathRenderer.class.getDeclaredField("provider");
@@ -458,7 +458,7 @@ public class GridExporter<T> implements Serializable {
    * value of the column so it can be converted to a Double, and then allows to specify the excel
    * format to be applied to the cell when exported to excel with a provider, so the resulting cell
    * is not a string but a number that can be used in formulas.
-   * 
+   *
    * @param column
    * @param decimalFormat
    * @param excelFormatProvider
@@ -594,7 +594,7 @@ public class GridExporter<T> implements Serializable {
 
   /**
    * Charset to use when exporting the CSV file.
-   * 
+   *
    * @return CSV file charset or default one.
    */
   public Charset getCsvCharset() {
@@ -602,7 +602,7 @@ public class GridExporter<T> implements Serializable {
   }
 
   public void setCsvCharset(SerializableSupplier<Charset> charset) {
-    this.csvCharset = charset;
+    csvCharset = charset;
   }
 
 }
