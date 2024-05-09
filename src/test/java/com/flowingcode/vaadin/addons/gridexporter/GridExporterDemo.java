@@ -84,6 +84,7 @@ public class GridExporterDemo extends Div {
     GridExporter<Person> exporter = GridExporter.createFor(grid);
     exporter.setExportValue(budgetCol, item -> "" + item.getBudget());
     exporter.setColumnPosition(lastNameCol, 1);
+    exporter.setAutoSizeColumns(false);
     exporter.setTitle("People information");
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));

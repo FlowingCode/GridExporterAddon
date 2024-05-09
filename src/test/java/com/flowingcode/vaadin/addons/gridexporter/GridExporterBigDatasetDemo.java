@@ -70,6 +70,7 @@ public class GridExporterBigDatasetDemo extends Div {
     grid.setWidthFull();
     this.setSizeFull();
     GridExporter<Person> exporter = GridExporter.createFor(grid);
+    exporter.setAutoSizeColumns(false);
     exporter.setExportValue(budgetCol, item -> "" + item.getBudget());
     exporter.setColumnPosition(lastNameCol, 1);
     exporter.setTitle("People information");

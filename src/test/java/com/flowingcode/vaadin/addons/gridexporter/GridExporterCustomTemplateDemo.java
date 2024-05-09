@@ -86,6 +86,7 @@ public class GridExporterCustomTemplateDemo extends Div {
     exporter.setAdditionalPlaceHolders(placeholders);
     exporter.setSheetNumber(1);
     exporter.setCsvExportEnabled(false);
+    exporter.setAutoSizeColumns(false);
     exporter.setNumberColumnFormat(budgetColumn, decimalFormat, "$#,###.##");
     exporter.setTitle("People information");
     exporter.setNullValueHandler(() -> "(No lastname)");
