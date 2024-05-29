@@ -1,0 +1,17 @@
+{
+  "resources":{
+  "includes":[{
+    "pattern":"\\Qtemplate.docx\\E"
+  }, {
+    "pattern":"\\Qtemplate.xlsx\\E"
+  }, {
+    "pattern":"\\Qcustom-template.docx\\E"
+  }, {
+    "pattern":"\\Qcustom-template.xlsx\\E"
+  }, {
+    "pattern":"\\Qsimple-custom-template.docx\\E"
+  }, {
+    "pattern":"\\Qsimple-custom-template.xlsx\\E"
+  }]},
+  "bundles":[]
+}
