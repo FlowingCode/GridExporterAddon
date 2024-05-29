@@ -1,0 +1,7 @@
+[
+{
+  "name":"com.flowingcode.vaadin.addons.gridexporter.Person",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"getLastName","parameterTypes":[] }, {"name":"getName","parameterTypes":[] }]
+}
+]
