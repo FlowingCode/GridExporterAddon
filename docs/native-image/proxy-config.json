@@ -1,0 +1,125 @@
+[
+  {
+	"interfaces": ["org.apache.fop.fo.FOValidationEventProducer"]
+  },
+  {
+	"interfaces": ["java.lang.Deprecated", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlAccessorType", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  }, 
+  {
+    "interfaces": ["javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlAccessOrder", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlAccessorOrder", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlAccessorType", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlAccessType", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlAnyAttribute", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },  
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlAnyElement", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlAttachmentRef", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlAttribute", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlElement", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlElementDecl", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlElementRef", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlElementRefs", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlElements", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlElementWrapper", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlEnum", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlEnumValue", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlID", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlIDREF", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlInlineBinaryData", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlList", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlMimeType", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlMixed", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlNs", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlNsForm", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlRegistry", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlRootElement", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlSchema", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlSchemaType", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlSchemaTypes", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlSeeAlso", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlTransient", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlType", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["javax.xml.bind.annotation.XmlValue", "com.sun.xml.bind.v2.model.annotation.Locatable"]
+  },
+  {
+	"interfaces": ["org.apache.fop.layoutmgr.BlockLevelEventProducer"]
+  },
+  {
+	"interfaces": ["org.apache.fop.fonts.FontEventProducer"]
+  },
+  {
+	"interfaces": ["org.apache.fop.render.RendererEventProducer"]
+  },
+  {
+	"interfaces": ["org.apache.fop.layoutmgr.inline.InlineLevelEventProducer"]
+  }
+]
