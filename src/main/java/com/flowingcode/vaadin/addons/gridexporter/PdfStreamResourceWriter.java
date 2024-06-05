@@ -20,13 +20,11 @@
 /** */
 package com.flowingcode.vaadin.addons.gridexporter;
 
+import com.vaadin.flow.server.VaadinSession;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import java.io.OutputStream;
 import org.docx4j.Docx4J;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
@@ -38,52 +36,31 @@ import org.slf4j.LoggerFactory;
  * @author mlope
  */
 @SuppressWarnings("serial")
-class PdfInputStreamFactory<T> extends DocxInputStreamFactory<T> {
+class PdfStreamResourceWriter<T> extends DocxStreamResourceWriter<T> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(PdfInputStreamFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(PdfStreamResourceWriter.class);
 
-  public PdfInputStreamFactory(GridExporter<T> exporter, String template) {
+  public PdfStreamResourceWriter(GridExporter<T> exporter, String template) {
     super(exporter, template);
   }
 
   @Override
-  public InputStream createInputStream() {
-    PipedInputStream in = new PipedInputStream();
+  public void accept(OutputStream out, VaadinSession session) throws IOException {
     try {
-      XWPFDocument doc = createDoc();
 
-      final PipedOutputStream out = new PipedOutputStream(in);
-      new Thread(
-              new Runnable() {
-                public void run() {
-                  try {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    doc.write(baos);
-                    WordprocessingMLPackage wordMLPackage =
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      createDoc(session).write(baos);
+
+      WordprocessingMLPackage wordMLPackage =
                         WordprocessingMLPackage.load(new ByteArrayInputStream(baos.toByteArray()));
                     MainDocumentPart documentPart = wordMLPackage.getMainDocumentPart();
 
                     Docx4J.toPDF(wordMLPackage, out);
-                  } catch (IOException e) {
-                    LOGGER.error("Problem generating export", e);
-                  } catch (Docx4JException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                  } finally {
-                    if (out != null) {
-                      try {
-                        out.close();
-                      } catch (IOException e) {
-                        LOGGER.error("Problem generating export", e);
-                      }
-                    }
-                  }
-                }
-              })
-          .start();
     } catch (IOException e) {
       LOGGER.error("Problem generating export", e);
+    } catch (Docx4JException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
     }
-    return in;
   }
 }
