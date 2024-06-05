@@ -25,10 +25,10 @@ import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.provider.DataProvider;
+import com.vaadin.flow.server.VaadinSession;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.io.OutputStream;
 import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
@@ -55,49 +55,35 @@ import org.slf4j.LoggerFactory;
  * @author mlope
  */
 @SuppressWarnings("serial")
-class DocxInputStreamFactory<T> extends BaseInputStreamFactory<T> {
+class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(DocxInputStreamFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DocxStreamResourceWriter.class);
 
   private static final String DEFAULT_TEMPLATE = "/template.docx";
 
-  public DocxInputStreamFactory(GridExporter<T> exporter, String template) {
+  public DocxStreamResourceWriter(GridExporter<T> exporter, String template) {
     super(exporter, template, DEFAULT_TEMPLATE);
   }
 
   @Override
-  public InputStream createInputStream() {
-    PipedInputStream in = new PipedInputStream();
+  public void accept(OutputStream out, VaadinSession session) throws IOException {
     try {
-      XWPFDocument doc = createDoc();
-
-      final PipedOutputStream out = new PipedOutputStream(in);
-      new Thread(
-              new Runnable() {
-                public void run() {
-                  try {
-                    doc.write(out);
-                  } catch (IOException e) {
-                    LOGGER.error("Problem generating export", e);
-                  } finally {
-                    if (out != null) {
-                      try {
-                        out.close();
-                      } catch (IOException e) {
-                        LOGGER.error("Problem generating export", e);
-                      }
-                    }
-                  }
-                }
-              })
-          .start();
+      createDoc(session).write(out);
     } catch (IOException e) {
       LOGGER.error("Problem generating export", e);
     }
-    return in;
   }
 
-  protected XWPFDocument createDoc() throws IOException {
+  protected XWPFDocument createDoc(VaadinSession session) throws IOException {
+    session.lock();
+    try {
+      return createDoc();
+    } finally {
+      session.unlock();
+    }
+  }
+
+  private XWPFDocument createDoc() throws IOException {
     exporter.setColumns(
         exporter.grid.getColumns().stream()
             .filter(this::isExportable)

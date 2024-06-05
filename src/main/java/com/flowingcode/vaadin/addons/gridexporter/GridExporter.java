@@ -268,7 +268,7 @@ public class GridExporter<T> implements Serializable {
   }
 
   public StreamResource getDocxStreamResource(String template) {
-    return new StreamResource(fileName + ".docx", new DocxInputStreamFactory<>(this, template));
+    return new StreamResource(fileName + ".docx", new DocxStreamResourceWriter<>(this, template));
   }
 
   public StreamResource getPdfStreamResource() {
@@ -276,11 +276,11 @@ public class GridExporter<T> implements Serializable {
   }
 
   public StreamResource getPdfStreamResource(String template) {
-    return new StreamResource(fileName + ".pdf", new PdfInputStreamFactory<>(this, template));
+    return new StreamResource(fileName + ".pdf", new PdfStreamResourceWriter<>(this, template));
   }
 
   public StreamResource getCsvStreamResource() {
-    return new StreamResource(fileName + ".csv", new CsvInputStreamFactory<>(this));
+    return new StreamResource(fileName + ".csv", new CsvStreamResourceWriter<>(this));
   }
 
   public StreamResource getExcelStreamResource() {
@@ -288,7 +288,7 @@ public class GridExporter<T> implements Serializable {
   }
 
   public StreamResource getExcelStreamResource(String template) {
-    return new StreamResource(fileName + ".xlsx", new ExcelInputStreamFactory<>(this, template));
+    return new StreamResource(fileName + ".xlsx", new ExcelStreamResourceWriter<>(this, template));
   }
 
   public String getTitle() {

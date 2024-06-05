@@ -22,8 +22,7 @@ package com.flowingcode.vaadin.addons.gridexporter;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -60,31 +59,37 @@ import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.function.ValueProvider;
-
+import com.vaadin.flow.server.VaadinSession;
 /**
  * @author mlopez
  */
 @SuppressWarnings("serial")
-class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
+class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ExcelInputStreamFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExcelStreamResourceWriter.class);
   private static final String DEFAULT_TEMPLATE = "/template.xlsx";
   private static final String COLUMN_CELLSTYLE_MAP = "colum-cellstyle-map";
   private static enum ExcelCellType {HEADER,CELL,FOOTER};
   
-  public ExcelInputStreamFactory(GridExporter<T> exporter, String template) {
+  public ExcelStreamResourceWriter(GridExporter<T> exporter, String template) {
     super(exporter, template, DEFAULT_TEMPLATE);
   }
 
   @Override
-  public InputStream createInputStream() {
-    PipedInputStream in = new PipedInputStream();
+  public void accept(OutputStream out, VaadinSession session) throws IOException {
     try {
-      exporter.setColumns(
-          exporter.grid.getColumns().stream()
-              .filter(this::isExportable)
-              .peek(col->ComponentUtil.setData(col, COLUMN_CELLSTYLE_MAP, null))
-              .collect(Collectors.toList()));
+      createWorkbook(session).write(out);
+    } catch (IOException e) {
+      LOGGER.error("Problem generating export", e);
+    }
+  }
+
+  private Workbook createWorkbook(VaadinSession session) {
+    session.lock();
+    try {
+      exporter.setColumns(exporter.grid.getColumns().stream().filter(this::isExportable)
+          .peek(col -> ComponentUtil.setData(col, COLUMN_CELLSTYLE_MAP, null))
+          .collect(Collectors.toList()));
       Workbook wb = getBaseTemplateWorkbook();
       Sheet sheet = wb.getSheetAt(exporter.sheetNumber);
 
@@ -98,12 +103,8 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
 
       fillHeaderOrFooter(sheet, cell, headers, true);
       if (exporter.autoMergeTitle && titleCell != null) {
-        sheet.addMergedRegion(
-            new CellRangeAddress(
-                titleCell.getRowIndex(),
-                titleCell.getRowIndex(),
-                titleCell.getColumnIndex(),
-                titleCell.getColumnIndex() + headers.size() - 1));
+        sheet.addMergedRegion(new CellRangeAddress(titleCell.getRowIndex(), titleCell.getRowIndex(),
+            titleCell.getColumnIndex(), titleCell.getColumnIndex() + headers.size() - 1));
       }
 
       cell = findCellWithPlaceHolder(sheet, exporter.dataPlaceHolder);
@@ -111,18 +112,20 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       dataStartingColumn[0] = cell.getColumnIndex();
 
       // initialize the data range with tne coordinates of tha data placeholder cell
-      CellRangeAddress dataRange = new CellRangeAddress(cell.getRowIndex(), cell.getRowIndex(), cell.getColumnIndex(), cell.getColumnIndex());
-      
+      CellRangeAddress dataRange = new CellRangeAddress(cell.getRowIndex(), cell.getRowIndex(),
+          cell.getColumnIndex(), cell.getColumnIndex());
+
       Sheet tempSheet = wb.cloneSheet(exporter.sheetNumber);
-      
-      int lastRow = fillData(sheet, cell, exporter.grid.getDataProvider(), dataRange, titleCell != null);
+
+      int lastRow =
+          fillData(sheet, cell, exporter.grid.getDataProvider(), dataRange, titleCell != null);
 
       applyConditionalFormattings(sheet, dataRange);
 
-      copyBottomOfSheetStartingOnRow(wb, tempSheet, sheet, cell.getRowIndex()+1, lastRow);
-      
+      copyBottomOfSheetStartingOnRow(wb, tempSheet, sheet, cell.getRowIndex() + 1, lastRow);
+
       wb.removeSheetAt(exporter.sheetNumber + 1);
-      
+
       cell = findCellWithPlaceHolder(sheet, exporter.footersPlaceHolder);
       List<Pair<String, Column<T>>> footers = getGridFooters(exporter.grid);
       if (cell != null) {
@@ -130,52 +133,25 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       }
 
       if (exporter.isAutoSizeColumns()) {
-        exporter
-            .getColumns()
-            .forEach(
-                column -> {
-                  sheet.autoSizeColumn(dataStartingColumn[0]);
-                  dataStartingColumn[0]++;
-                });
+        exporter.getColumns().forEach(column -> {
+          sheet.autoSizeColumn(dataStartingColumn[0]);
+          dataStartingColumn[0]++;
+        });
       }
 
-      exporter
-          .additionalPlaceHolders
-          .entrySet()
-          .forEach(
-              entry -> {
-                Cell cellwp;
-                cellwp = findCellWithPlaceHolder(sheet, entry.getKey());
-                while (cellwp != null) {
-                  cellwp.setCellValue(entry.getValue());
-                  cellwp = findCellWithPlaceHolder(sheet, entry.getKey());
-                }
-              });
+      exporter.additionalPlaceHolders.entrySet().forEach(entry -> {
+        Cell cellwp;
+        cellwp = findCellWithPlaceHolder(sheet, entry.getKey());
+        while (cellwp != null) {
+          cellwp.setCellValue(entry.getValue());
+          cellwp = findCellWithPlaceHolder(sheet, entry.getKey());
+        }
+      });
 
-      final PipedOutputStream out = new PipedOutputStream(in);
-      new Thread(
-              new Runnable() {
-                public void run() {
-                  try {
-                    wb.write(out);
-                  } catch (IOException e) {
-                    LOGGER.error("Problem generating export", e);
-                  } finally {
-                    if (out != null) {
-                      try {
-                        out.close();
-                      } catch (IOException e) {
-                        LOGGER.error("Problem generating export", e);
-                      }
-                    }
-                  }
-                }
-              })
-          .start();
-    } catch (IOException e) {
-      LOGGER.error("Problem generating export", e);
+      return wb;
+    } finally {
+      session.unlock();
     }
-    return in;
   }
 
   private void copyBottomOfSheetStartingOnRow(Workbook workbook, Sheet sourceSheet,

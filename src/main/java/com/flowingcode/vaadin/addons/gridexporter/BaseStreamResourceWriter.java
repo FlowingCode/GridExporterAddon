@@ -30,7 +30,7 @@ import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.data.provider.hierarchy.HierarchicalDataProvider;
 import com.vaadin.flow.data.provider.hierarchy.HierarchicalQuery;
-import com.vaadin.flow.server.InputStreamFactory;
+import com.vaadin.flow.server.StreamResourceWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,18 +44,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("serial")
-abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
+abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BaseInputStreamFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BaseStreamResourceWriter.class);
+
   protected GridExporter<T> exporter;
   protected String template;
 
-  public BaseInputStreamFactory(GridExporter<T> exporter) {
+  public BaseStreamResourceWriter(GridExporter<T> exporter) {
     super();
     this.exporter = exporter;
   }
 
-  public BaseInputStreamFactory(
+  public BaseStreamResourceWriter(
       GridExporter<T> exporter, String customTemplate, String defaultTemplate) {
     super();
     this.exporter = exporter;
