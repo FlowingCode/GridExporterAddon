@@ -35,6 +35,8 @@ import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.StreamResourceWriter;
+import com.vaadin.flow.server.VaadinSession;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -47,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +64,18 @@ public class GridExporter<T> implements Serializable {
   private boolean pdfExportEnabled = true;
   private boolean csvExportEnabled = true;
   private boolean autoSizeColumns = true;
+
+  /** Represents all the permits available to the semaphore. */
+  public static final float MAX_COST = ConcurrentStreamResourceWriter.MAX_COST;
+
+  /** A fractional cost that acquires only one permit. */
+  public static final float MIN_COST = ConcurrentStreamResourceWriter.MIN_COST;
+
+  /** The standard unit of resource usage for concurrent downloads. */
+  public static final float DEFAULT_COST = 1.0f;
+
+  private static long concurrentDownloadTimeoutNanos = 0L;
+  private float concurrentDownloadCost = DEFAULT_COST;
 
   static final String COLUMN_VALUE_PROVIDER_DATA = "column-value-provider-data";
   static final String COLUMN_EXPORTED_PROVIDER_DATA = "column-value-exported-data";
@@ -268,7 +283,8 @@ public class GridExporter<T> implements Serializable {
   }
 
   public StreamResource getDocxStreamResource(String template) {
-    return new StreamResource(fileName + ".docx", new DocxStreamResourceWriter<>(this, template));
+    return new StreamResource(fileName + ".docx",
+        makeConcurrentWriter(new DocxStreamResourceWriter<>(this, template)));
   }
 
   public StreamResource getPdfStreamResource() {
@@ -276,7 +292,8 @@ public class GridExporter<T> implements Serializable {
   }
 
   public StreamResource getPdfStreamResource(String template) {
-    return new StreamResource(fileName + ".pdf", new PdfStreamResourceWriter<>(this, template));
+    return new StreamResource(fileName + ".pdf",
+        makeConcurrentWriter(new PdfStreamResourceWriter<>(this, template)));
   }
 
   public StreamResource getCsvStreamResource() {
@@ -288,7 +305,101 @@ public class GridExporter<T> implements Serializable {
   }
 
   public StreamResource getExcelStreamResource(String template) {
-    return new StreamResource(fileName + ".xlsx", new ExcelStreamResourceWriter<>(this, template));
+    return new StreamResource(fileName + ".xlsx",
+        makeConcurrentWriter(new ExcelStreamResourceWriter<>(this, template)));
+  }
+
+  private StreamResourceWriter makeConcurrentWriter(StreamResourceWriter writer) {
+    return new ConcurrentStreamResourceWriter(writer) {
+      @Override
+      public float getCost(VaadinSession session) {
+        return concurrentDownloadCost;
+      }
+
+      @Override
+      public long getTimeout() {
+        // It would have been possible to specify a different timeout for each instance but I cannot
+        // figure out a good use case for that. The timeout returned herebecomes relevant when the
+        // semaphore has been acquired by any other download, so the timeout must reflect how long
+        // it is reasonable to wait for "any other download" to complete and release the semaphore.
+        //
+        // Since the reasonable timeout would depend on the duration of "any other download", it
+        // makes sense that it's a global setting instead of a per-instance setting.
+        return concurrentDownloadTimeoutNanos;
+      }
+
+    };
+  }
+
+  /**
+   * Sets the limit for the {@linkplain #setConcurrentDownloadCost(float) cost of concurrent
+   * downloads}. If all the downloads have a cost of {@link #DEFAULT_COST}, the limit represents the
+   * number of concurrent downloads that are allowed.
+   * <p>
+   * Finite limits are capped to {@link #MAX_COST} (32767). If the limit is
+   * {@link Float#POSITIVE_INFINITY POSITIVE_INFINITY}, concurrent downloads will not be limited.
+   *
+   * @param limit the maximum cost of concurrent downloads allowed
+   * @throws IllegalArgumentException if the limit is zero or negative.
+   */
+  public static void setConcurrentDownloadLimit(float limit) {
+    ConcurrentStreamResourceWriter.setLimit(limit);
+  }
+
+  /**
+   * Returns the limit for the number of concurrent downloads.
+   *
+   * @return the limit for the number of concurrent downloads, or {@link Float#POSITIVE_INFINITY} if
+   *         concurrent downloads are not limited.
+   */
+  public static float getConcurrentDownloadLimit() {
+    return ConcurrentStreamResourceWriter.getLimit();
+  }
+
+  /**
+   * Sets the timeout for acquiring a permit to start a download when the
+   * {@linkplain #setConcurrentDownloadLimit(int) maximum number of concurrent downloads} is
+   * reached. If the timeout is less than or equal to zero, the downloads will fail immediately if
+   * no enough permits can be acquired.
+   *
+   * This timeout is crucial for preventing the system from hanging indefinitely while waiting for
+   * available resources. If the timeout expires before a permit can be acquired, the download is
+   * cancelled.
+   *
+   * @param timeout the maximum time to wait for a permit
+   * @param unit the time unit of the {@code timeout} argument
+   */
+  public static void setConcurrentDownloadTimeout(long timeout, TimeUnit unit) {
+    GridExporter.concurrentDownloadTimeoutNanos = unit.toNanos(timeout);
+  }
+
+  /**
+   * Sets the cost for concurrent downloads. This cost is used to determine the number of permits
+   * required for downloads to proceed, thereby controlling the concurrency level. At any given
+   * time, the sum of the costs of all concurrent downloads will not exceed the limit set by
+   * {@link #setConcurrentDownloadLimit(float)}.
+   * <p>
+   *
+   * The cost is represented as a float to allow for more granular control over resource usage. By
+   * using a floating-point number, fractional costs can be expressed, providing flexibility in
+   * determining the resource consumption for different downloads.
+   * <p>
+   *
+   * The cost is converted to a number of permits by capping it to stay within the limit. A cost of
+   * 1.0 ({@link #DEFAULT_COST}) represents a standard unit of resource usage, while a cost of 0.5
+   * represents half a unit, and a cost above 1.0 indicates higher than normal resource usage.
+   * <p>
+   *
+   * If the cost is zero or negative, no permits are needed. However, any positive cost, no matter
+   * how small, will require at least one permit to prevent downloads with very low costs from
+   * bypassing the semaphore. {@link #MIN_COST} represents the minimal fractional cost that acquires
+   * only one permit (hence {@code 2*MIN_COST} acquires two permits and so on). A cost of
+   * {@link #MAX_COST} prevents any other downloads from acquiring permits simultaneously.
+   *
+   * @param concurrentDownloadCost the cost associated with concurrent downloads for this instance.
+   */
+  public void setConcurrentDownloadCost(float concurrentDownloadCost) {
+    this.concurrentDownloadCost = concurrentDownloadCost;
   }
 
   public String getTitle() {
