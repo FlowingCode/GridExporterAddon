@@ -16,3 +16,8 @@ types.d.ts
 frontend/generated/
 frontend/index.html
 src/main/dev-bundle/*
+/src/main/bundles
+/src/main/dev-bundle
+/.flow-node-tasks.lock
+/vite.config.ts
+/vite.generated.ts
