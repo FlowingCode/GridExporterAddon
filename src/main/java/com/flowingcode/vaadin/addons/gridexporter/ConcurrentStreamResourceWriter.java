@@ -1,11 +1,13 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.StreamResourceWriter;
 import com.vaadin.flow.server.VaadinSession;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.channels.InterruptedByTimeoutException;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
@@ -29,6 +31,8 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
   private static final ConfigurableSemaphore semaphore = new ConfigurableSemaphore();
 
   private static volatile boolean enabled;
+
+  private static volatile boolean failOnUiChange;
 
   private final StreamResourceWriter delegate;
 
@@ -89,6 +93,10 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
     }
   }
 
+  static void setFailOnUiChange(boolean failOnUiChange) {
+    ConcurrentStreamResourceWriter.failOnUiChange = failOnUiChange;
+  }
+
   /**
    * Returns the limit for the number of concurrent downloads.
    *
@@ -145,6 +153,22 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
    */
   public float getCost(VaadinSession session) {
     return DEFAULT_COST;
+  }
+
+  /**
+   * Returns the UI associated with the current download.
+   * <p>
+   * This method is used to ensure that the UI is still attached to the current session when a
+   * download is initiated. Implementations should return the appropriate UI instance.
+   * </p>
+   *
+   * @return the {@link UI} instance associated with the current download, or {@code null} if no UI
+   *         is available.
+   */
+  protected abstract UI getUI();
+
+  private UI getAttachedUI() {
+    return Optional.ofNullable(getUI()).filter(UI::isAttached).orElse(null);
   }
 
   /**
@@ -207,36 +231,41 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
   public final void accept(OutputStream stream, VaadinSession session) throws IOException {
     onAccept();
     try {
-      if (!enabled) {
-        delegate.accept(stream, session);
-      } else {
+    if (!enabled) {
+      delegate.accept(stream, session);
+    } else {
 
-        try {
-
-          int permits;
-          float cost = getCost(session);
-          synchronized (semaphore) {
-            permits = costToPermits(cost, semaphore.maxPermits);
-          }
-
-          if (semaphore.tryAcquire(permits, getTimeout(), TimeUnit.NANOSECONDS)) {
-            try {
-              delegate.accept(stream, session);
-            } finally {
-              semaphore.release(permits);
-            }
-          } else {
-            onTimeout();
-            throw new InterruptedByTimeoutException();
-          }
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw (IOException) new InterruptedIOException().initCause(e);
+      try {
+        int permits;
+        float cost = getCost(session);
+        synchronized (semaphore) {
+          permits = costToPermits(cost, semaphore.maxPermits);
         }
+
+        UI ui = failOnUiChange ? getAttachedUI() : null;
+
+        if (semaphore.tryAcquire(permits, getTimeout(), TimeUnit.NANOSECONDS)) {
+          try {
+            if (ui != null && getAttachedUI()!=ui) {
+              // The UI has changed or was detached after acquirig the semaphore
+              throw new IOException("Detached UI");
+            }
+            delegate.accept(stream, session);
+          } finally {
+            semaphore.release(permits);
+          }
+        } else {
+          onTimeout();
+          throw new InterruptedByTimeoutException();
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw (IOException) new InterruptedIOException().initCause(e);
       }
+    }
     } finally {
       onFinish();
-    }
+  }
   }
 
 }

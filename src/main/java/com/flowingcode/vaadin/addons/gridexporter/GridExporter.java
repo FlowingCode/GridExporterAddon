@@ -24,6 +24,7 @@ import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.HasEnabled;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.ColumnPathRenderer;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
@@ -41,6 +42,7 @@ import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.StreamResourceWriter;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.shared.Registration;
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -354,27 +356,32 @@ public class GridExporter<T> implements Serializable {
 
     private Component button;
 
-    @Override
-    public float getCost(VaadinSession session) {
-      return concurrentDownloadCost;
-    }
+      @Override
+      public float getCost(VaadinSession session) {
+        return concurrentDownloadCost;
+      }
 
-    @Override
-    public long getTimeout() {
-      // It would have been possible to specify a different timeout for each instance but I cannot
-      // figure out a good use case for that. The timeout returned herebecomes relevant when the
-      // semaphore has been acquired by any other download, so the timeout must reflect how long
-      // it is reasonable to wait for "any other download" to complete and release the semaphore.
-      //
-      // Since the reasonable timeout would depend on the duration of "any other download", it
-      // makes sense that it's a global setting instead of a per-instance setting.
-      return concurrentDownloadTimeoutNanos;
-    }
+      @Override
+      public long getTimeout() {
+        // It would have been possible to specify a different timeout for each instance but I cannot
+        // figure out a good use case for that. The timeout returned herebecomes relevant when the
+        // semaphore has been acquired by any other download, so the timeout must reflect how long
+        // it is reasonable to wait for "any other download" to complete and release the semaphore.
+        //
+        // Since the reasonable timeout would depend on the duration of "any other download", it
+        // makes sense that it's a global setting instead of a per-instance setting.
+        return concurrentDownloadTimeoutNanos;
+      }
 
-    @Override
-    protected void onTimeout() {
-      fireConcurrentDownloadTimeout();
-    }
+      @Override
+      protected UI getUI() {
+        return grid.getUI().orElse(null);
+      }
+
+      @Override
+      protected void onTimeout() {
+        fireConcurrentDownloadTimeout();
+      }
 
     @Override
     protected void onAccept() {
@@ -386,7 +393,7 @@ public class GridExporter<T> implements Serializable {
     @Override
     protected void onFinish() {
       setButtonEnabled(true);
-    }
+  }
 
     private void setButtonEnabled(boolean enabled) {
       if (button instanceof HasEnabled) {
@@ -472,6 +479,17 @@ public class GridExporter<T> implements Serializable {
    */
   public static float getConcurrentDownloadLimit() {
     return ConcurrentStreamResourceWriter.getLimit();
+  }
+
+  /**
+   * Configures the behavior of the stream operation when the UI changes during execution.
+   *
+   * @param failOnUiChange If {@code true}, the operation will throw an {@link IOException} if the
+   *        UI changes (e.g., becomes detached) after acquiring the semaphore. If {@code false}, the
+   *        operation will proceed regardless of any UI changes.
+   */
+  public static void setFailOnUiChange(boolean failOnUiChange) {
+    ConcurrentStreamResourceWriter.setFailOnUiChange(failOnUiChange);
   }
 
   /**
