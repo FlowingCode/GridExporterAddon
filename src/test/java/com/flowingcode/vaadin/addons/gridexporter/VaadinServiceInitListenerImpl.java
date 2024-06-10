@@ -20,6 +20,8 @@ public class VaadinServiceInitListenerImpl implements VaadinServiceInitListener 
     });
     // end-block
 
+    GridExporter.setFailOnUiChange(true);
+
   }
 
 }
