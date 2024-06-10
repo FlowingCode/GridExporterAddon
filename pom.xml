@@ -301,6 +301,9 @@
 					<supportedPackagings>
 						<supportedPackaging>jar</supportedPackaging>
 					</supportedPackagings>
+					<systemProperties>
+						<com.vaadin.flow.server.pushMode>AUTOMATIC</com.vaadin.flow.server.pushMode>
+					</systemProperties>
 				</configuration>
 			</plugin>
 		</plugins>

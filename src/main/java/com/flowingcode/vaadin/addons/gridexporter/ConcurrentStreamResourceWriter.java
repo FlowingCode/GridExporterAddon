@@ -148,6 +148,16 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
   }
 
   /**
+   * Callback method that is invoked when a timeout occurs while trying to acquire a permit for
+   * starting a download.
+   * <p>
+   * Implementations can use this method to perform any necessary actions in response to the
+   * timeout, such as logging a warning or notifying the user.
+   * </p>
+   */
+  protected abstract void onTimeout();
+
+  /**
    * Handles {@code stream} (writes data to it) using {@code session} as a context.
    * <p>
    * Note that the method is not called under the session lock. It means that if implementation
@@ -185,6 +195,7 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
             semaphore.release(permits);
           }
         } else {
+          onTimeout();
           throw new InterruptedByTimeoutException();
         }
       } catch (InterruptedException e) {

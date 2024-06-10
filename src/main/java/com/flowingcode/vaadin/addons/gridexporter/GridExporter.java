@@ -32,11 +32,13 @@ import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.renderer.BasicRenderer;
 import com.vaadin.flow.data.renderer.LitRenderer;
 import com.vaadin.flow.data.renderer.Renderer;
+import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.StreamResourceWriter;
 import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.shared.Registration;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -49,8 +51,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +80,10 @@ public class GridExporter<T> implements Serializable {
 
   private static long concurrentDownloadTimeoutNanos = 0L;
   private float concurrentDownloadCost = DEFAULT_COST;
+  private final List<SerializableConsumer<ConcurrentDownloadTimeoutEvent>> instanceDownloadTimeoutListeners =
+      new CopyOnWriteArrayList<>();
+  private static final List<SerializableConsumer<ConcurrentDownloadTimeoutEvent>> globalDownloadTimeoutListeners =
+      new CopyOnWriteArrayList<>();
 
   static final String COLUMN_VALUE_PROVIDER_DATA = "column-value-provider-data";
   static final String COLUMN_EXPORTED_PROVIDER_DATA = "column-value-exported-data";
@@ -328,7 +336,67 @@ public class GridExporter<T> implements Serializable {
         return concurrentDownloadTimeoutNanos;
       }
 
+      @Override
+      protected void onTimeout() {
+        fireConcurrentDownloadTimeout();
+      }
+
+
     };
+  }
+
+  /**
+   * Handles the timeout event by notifying all registered listeners.
+   * <p>
+   * This method is called when a timeout occurs during a concurrent download. It creates a
+   * {@link ConcurrentDownloadTimeoutEvent} and notifies all instance and global listeners. If any
+   * listener stops the event propagation, subsequent listeners will not be notified.
+   */
+  private void fireConcurrentDownloadTimeout() {
+    if (!instanceDownloadTimeoutListeners.isEmpty() || !globalDownloadTimeoutListeners.isEmpty()) {
+      grid.getUI().ifPresent(ui -> ui.access(() -> {
+        ConcurrentDownloadTimeoutEvent ev = new ConcurrentDownloadTimeoutEvent(GridExporter.this);
+        Stream.concat(instanceDownloadTimeoutListeners.stream(),
+            globalDownloadTimeoutListeners.stream()).forEach(listener -> {
+              if (!ev.isPropagationStopped()) {
+                listener.accept(ev);
+              }
+            });
+      }));
+    }
+  }
+
+  /**
+   * Adds a listener for concurrent download timeout events specific to this instance.
+   * <p>
+   * The listener will be called whenever a concurrent download timeout event occurs.
+   *
+   * @param listener the listener to be added
+   * @return a {@link Registration} object that can be used to remove the listener
+   */
+  public Registration addConcurrentDownloadTimeoutEvent(
+      SerializableConsumer<ConcurrentDownloadTimeoutEvent> listener) {
+    instanceDownloadTimeoutListeners.add(0, listener);
+    return () -> instanceDownloadTimeoutListeners.remove(listener);
+  }
+
+  /**
+   * Adds a global listener for concurrent download timeout events.
+   * <p>
+   * The listener will be called whenever a concurrent download timeout event occurs.
+   * <p>
+   * Note that instance-specific listeners take precedence over global listeners. If an instance
+   * listener stops the event propagation by calling
+   * {@link ConcurrentDownloadTimeoutEvent#stopPropagation() stopPropagation()}, the global
+   * listeners will not be notified.
+   *
+   * @param listener the listener to be added
+   * @return a {@link Registration} object that can be used to remove the listener
+   */
+  public static Registration addGlobalConcurrentDownloadTimeoutEvent(
+      SerializableConsumer<ConcurrentDownloadTimeoutEvent> listener) {
+    globalDownloadTimeoutListeners.add(0, listener);
+    return () -> globalDownloadTimeoutListeners.remove(listener);
   }
 
   /**
