@@ -4,6 +4,7 @@ import static org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertTrue;
 import com.flowingcode.vaadin.addons.gridexporter.ConfigurableConcurrentStreamResourceWriter;
 import com.flowingcode.vaadin.addons.gridexporter.GridExporter;
 import com.vaadin.flow.server.StreamResourceWriter;
@@ -29,15 +30,22 @@ public class ConcurrentExportTests {
 
   private static final int TEST_TIMEOUT = 5000;
 
-  private static Matcher<Throwable> interruptedByTimeout() {
+  private static Matcher<Throwable> throwsInterruptedByTimeout() {
     return Matchers.instanceOf(InterruptedByTimeoutException.class);
   }
 
   private class ConcurrentStreamResourceWriter
       extends ConfigurableConcurrentStreamResourceWriter {
 
+    private boolean interruptedByTimeout;
+
     public ConcurrentStreamResourceWriter(StreamResourceWriter delegate) {
       super(delegate);
+    }
+
+    @Override
+    protected void onTimeout() {
+      interruptedByTimeout = true;
     }
 
   }
@@ -68,6 +76,8 @@ public class ConcurrentExportTests {
     MockDownload await() throws InterruptedException;
 
     MockDownload start();
+
+    boolean wasInterruptedByTimeout();
   }
 
   private MockDownload newDownload() {
@@ -142,6 +152,11 @@ public class ConcurrentExportTests {
       public MockDownload withCost(float cost) {
         writer.setCost(cost);
         return this;
+      }
+
+      @Override
+      public boolean wasInterruptedByTimeout() {
+        return writer.interruptedByTimeout;
       }
     };
   }
@@ -244,7 +259,8 @@ public class ConcurrentExportTests {
     await(barrier);
 
     assertThat(q1.get(), nullValue());
-    assertThat(q2.get(), interruptedByTimeout());
+    assertThat(q2.get(), throwsInterruptedByTimeout());
+    assertTrue(q2.wasInterruptedByTimeout());
   }
 
 
@@ -262,7 +278,7 @@ public class ConcurrentExportTests {
 
     assertThat(q1.get(), nullValue());
     assertThat(q2.get(), nullValue());
-    assertThat(q3.get(), interruptedByTimeout());
+    assertThat(q3.get(), throwsInterruptedByTimeout());
   }
 
   @Test(timeout = TEST_TIMEOUT)
@@ -278,8 +294,8 @@ public class ConcurrentExportTests {
     await(barrier);
 
     assertThat(q1.get(), nullValue());
-    assertThat(q2.get(), interruptedByTimeout());
-    assertThat(q3.get(), interruptedByTimeout());
+    assertThat(q2.get(), throwsInterruptedByTimeout());
+    assertThat(q3.get(), throwsInterruptedByTimeout());
   }
 
 }

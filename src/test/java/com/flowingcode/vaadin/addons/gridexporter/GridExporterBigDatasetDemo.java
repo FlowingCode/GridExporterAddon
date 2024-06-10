@@ -94,7 +94,8 @@ public class GridExporterBigDatasetDemo extends Div {
 
             Additionally, <code>setConcurrentDownloadTimeout</code> enforces a timeout for acquiring the necessary permits
             during a download operation. If the permits are not obtained within the specified timeframe, the download
-            request will be aborted, preventing prolonged waiting periods, especially during peak system loads.
+            request will be aborted and the <code>DownloadTimeoutEvent</code> listener will execute, preventing prolonged
+            waiting periods, especially during peak system loads.
             </div>""");
     add(concurrent);
     // #endif
