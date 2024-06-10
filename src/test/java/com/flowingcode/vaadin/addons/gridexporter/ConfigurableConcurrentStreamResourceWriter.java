@@ -1,5 +1,6 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.StreamResourceWriter;
 import com.vaadin.flow.server.VaadinSession;
 
@@ -13,6 +14,7 @@ public abstract class ConfigurableConcurrentStreamResourceWriter
 
   private float cost = GridExporter.DEFAULT_COST;
   private long timeout = 0L;
+  private UI ui;
 
   @Override
   public float getCost(VaadinSession session) {
@@ -30,6 +32,15 @@ public abstract class ConfigurableConcurrentStreamResourceWriter
 
   public void setTimeout(long timeout) {
     this.timeout = timeout;
+  }
+
+  @Override
+  public UI getUI() {
+    return ui;
+  }
+
+  public void setUi(UI ui) {
+    this.ui = ui;
   }
 
 }
