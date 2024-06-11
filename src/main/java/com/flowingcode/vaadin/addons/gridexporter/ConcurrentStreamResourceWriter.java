@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
 
 /**
@@ -31,6 +32,8 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
   private static volatile boolean enabled;
 
   private final StreamResourceWriter delegate;
+
+  private final AtomicBoolean downloading = new AtomicBoolean();
 
   private static final class ConfigurableSemaphore extends Semaphore {
 
@@ -175,33 +178,40 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
    */
   @Override
   public final void accept(OutputStream stream, VaadinSession session) throws IOException {
+    if (!downloading.compareAndSet(false, true)) {
+      throw new IllegalStateException();
+    }
 
-    if (!enabled) {
-      delegate.accept(stream, session);
-    } else {
+    try {
+      if (!enabled) {
+        delegate.accept(stream, session);
+      } else {
 
-      try {
+        try {
 
-        int permits;
-        float cost = getCost(session);
-        synchronized (semaphore) {
-          permits = costToPermits(cost, semaphore.maxPermits);
-        }
-
-        if (semaphore.tryAcquire(permits, getTimeout(), TimeUnit.NANOSECONDS)) {
-          try {
-            delegate.accept(stream, session);
-          } finally {
-            semaphore.release(permits);
+          int permits;
+          float cost = getCost(session);
+          synchronized (semaphore) {
+            permits = costToPermits(cost, semaphore.maxPermits);
           }
-        } else {
-          onTimeout();
-          throw new InterruptedByTimeoutException();
+
+          if (semaphore.tryAcquire(permits, getTimeout(), TimeUnit.NANOSECONDS)) {
+            try {
+              delegate.accept(stream, session);
+            } finally {
+              semaphore.release(permits);
+            }
+          } else {
+            onTimeout();
+            throw new InterruptedByTimeoutException();
+          }
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw (IOException) new InterruptedIOException().initCause(e);
         }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw (IOException) new InterruptedIOException().initCause(e);
       }
+    } finally {
+      downloading.set(false);
     }
   }
 
