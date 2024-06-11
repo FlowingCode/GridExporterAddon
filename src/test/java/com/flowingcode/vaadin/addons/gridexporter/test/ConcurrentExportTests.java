@@ -38,6 +38,8 @@ public class ConcurrentExportTests {
       extends ConfigurableConcurrentStreamResourceWriter {
 
     private boolean interruptedByTimeout;
+    private boolean accepted;
+    private boolean finished;
 
     public ConcurrentStreamResourceWriter(StreamResourceWriter delegate) {
       super(delegate);
@@ -46,6 +48,16 @@ public class ConcurrentExportTests {
     @Override
     protected void onTimeout() {
       interruptedByTimeout = true;
+    }
+
+    @Override
+    protected void onAccept() {
+      accepted = true;
+    }
+
+    @Override
+    protected void onFinish() {
+      finished = true;
     }
 
   }
