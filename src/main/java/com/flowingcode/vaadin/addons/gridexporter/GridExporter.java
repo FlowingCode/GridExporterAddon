@@ -21,7 +21,9 @@ package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.flowingcode.vaadin.addons.fontawesome.FontAwesome;
 import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.HasEnabled;
 import com.vaadin.flow.component.grid.ColumnPathRenderer;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
@@ -50,6 +52,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -79,6 +82,9 @@ public class GridExporter<T> implements Serializable {
   public static final float DEFAULT_COST = 1.0f;
 
   private static long concurrentDownloadTimeoutNanos = 0L;
+
+  private boolean disableOnClick;
+
   private float concurrentDownloadCost = DEFAULT_COST;
   private final List<SerializableConsumer<ConcurrentDownloadTimeoutEvent>> instanceDownloadTimeoutListeners =
       new CopyOnWriteArrayList<>();
@@ -148,21 +154,25 @@ public class GridExporter<T> implements Serializable {
               if (exporter.autoAttachExportButtons) {
                 if (exporter.isExcelExportEnabled()) {
                   Anchor excelLink = new Anchor("", FontAwesome.Regular.FILE_EXCEL.create());
-                  excelLink.setHref(exporter.getExcelStreamResource(excelCustomTemplate));
+                  excelLink
+                      .setHref(exporter.getExcelStreamResource(excelCustomTemplate)
+                          .forComponent(excelLink));
                   excelLink.getElement().setAttribute("download", true);
                   footerToolbar.add(
                       new FooterToolbarItem(excelLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
                 if (exporter.isDocxExportEnabled()) {
                   Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_WORD.create());
-                  docLink.setHref(exporter.getDocxStreamResource(docxCustomTemplate));
+                  docLink.setHref(
+                      exporter.getDocxStreamResource(docxCustomTemplate).forComponent(docLink));
                   docLink.getElement().setAttribute("download", true);
                   footerToolbar
                       .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
                 if (exporter.isPdfExportEnabled()) {
                   Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_PDF.create());
-                  docLink.setHref(exporter.getPdfStreamResource(docxCustomTemplate));
+                  docLink.setHref(
+                      exporter.getPdfStreamResource(docxCustomTemplate).forComponent(docLink));
                   docLink.getElement().setAttribute("download", true);
                   footerToolbar
                       .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
@@ -286,21 +296,21 @@ public class GridExporter<T> implements Serializable {
     return value;
   }
 
-  public StreamResource getDocxStreamResource() {
+  public GridExporterStreamResource getDocxStreamResource() {
     return getDocxStreamResource(null);
   }
 
-  public StreamResource getDocxStreamResource(String template) {
-    return new StreamResource(fileName + ".docx",
+  public GridExporterStreamResource getDocxStreamResource(String template) {
+    return new GridExporterStreamResource(fileName + ".docx",
         makeConcurrentWriter(new DocxStreamResourceWriter<>(this, template)));
   }
 
-  public StreamResource getPdfStreamResource() {
+  public GridExporterStreamResource getPdfStreamResource() {
     return getPdfStreamResource(null);
   }
 
-  public StreamResource getPdfStreamResource(String template) {
-    return new StreamResource(fileName + ".pdf",
+  public GridExporterStreamResource getPdfStreamResource(String template) {
+    return new GridExporterStreamResource(fileName + ".pdf",
         makeConcurrentWriter(new PdfStreamResourceWriter<>(this, template)));
   }
 
@@ -308,41 +318,81 @@ public class GridExporter<T> implements Serializable {
     return new StreamResource(fileName + ".csv", new CsvStreamResourceWriter<>(this));
   }
 
-  public StreamResource getExcelStreamResource() {
+  public GridExporterStreamResource getExcelStreamResource() {
     return getExcelStreamResource(null);
   }
 
-  public StreamResource getExcelStreamResource(String template) {
-    return new StreamResource(fileName + ".xlsx",
+  public GridExporterStreamResource getExcelStreamResource(String template) {
+    return new GridExporterStreamResource(fileName + ".xlsx",
         makeConcurrentWriter(new ExcelStreamResourceWriter<>(this, template)));
   }
 
-  private StreamResourceWriter makeConcurrentWriter(StreamResourceWriter writer) {
-    return new ConcurrentStreamResourceWriter(writer) {
-      @Override
-      public float getCost(VaadinSession session) {
-        return concurrentDownloadCost;
+  private GridExporterConcurrentStreamResourceWriter makeConcurrentWriter(
+      StreamResourceWriter writer) {
+    return new GridExporterConcurrentStreamResourceWriter(writer);
+  }
+
+  public class GridExporterStreamResource extends StreamResource {
+    private final GridExporterConcurrentStreamResourceWriter writer;
+
+    GridExporterStreamResource(String name, GridExporterConcurrentStreamResourceWriter writer) {
+      super(name, writer);
+      this.writer = Objects.requireNonNull(writer);
+    }
+
+    public GridExporterStreamResource forComponent(Component component) {
+      writer.button = component;
+      return this;
+    }
+  }
+
+  private class GridExporterConcurrentStreamResourceWriter extends ConcurrentStreamResourceWriter {
+
+    GridExporterConcurrentStreamResourceWriter(StreamResourceWriter delegate) {
+      super(delegate);
+    }
+
+    private Component button;
+
+    @Override
+    public float getCost(VaadinSession session) {
+      return concurrentDownloadCost;
+    }
+
+    @Override
+    public long getTimeout() {
+      // It would have been possible to specify a different timeout for each instance but I cannot
+      // figure out a good use case for that. The timeout returned herebecomes relevant when the
+      // semaphore has been acquired by any other download, so the timeout must reflect how long
+      // it is reasonable to wait for "any other download" to complete and release the semaphore.
+      //
+      // Since the reasonable timeout would depend on the duration of "any other download", it
+      // makes sense that it's a global setting instead of a per-instance setting.
+      return concurrentDownloadTimeoutNanos;
+    }
+
+    @Override
+    protected void onTimeout() {
+      fireConcurrentDownloadTimeout();
+    }
+
+    @Override
+    protected void onAccept() {
+      if (disableOnClick) {
+        setButtonEnabled(false);
       }
+    }
 
-      @Override
-      public long getTimeout() {
-        // It would have been possible to specify a different timeout for each instance but I cannot
-        // figure out a good use case for that. The timeout returned herebecomes relevant when the
-        // semaphore has been acquired by any other download, so the timeout must reflect how long
-        // it is reasonable to wait for "any other download" to complete and release the semaphore.
-        //
-        // Since the reasonable timeout would depend on the duration of "any other download", it
-        // makes sense that it's a global setting instead of a per-instance setting.
-        return concurrentDownloadTimeoutNanos;
+    @Override
+    protected void onFinish() {
+      setButtonEnabled(true);
+    }
+
+    private void setButtonEnabled(boolean enabled) {
+      if (button instanceof HasEnabled) {
+        grid.getUI().ifPresent(ui -> ui.access(() -> ((HasEnabled) button).setEnabled(enabled)));
       }
-
-      @Override
-      protected void onTimeout() {
-        fireConcurrentDownloadTimeout();
-      }
-
-
-    };
+    }
   }
 
   /**
@@ -439,6 +489,20 @@ public class GridExporter<T> implements Serializable {
    */
   public static void setConcurrentDownloadTimeout(long timeout, TimeUnit unit) {
     GridExporter.concurrentDownloadTimeoutNanos = unit.toNanos(timeout);
+  }
+
+  /**
+   * Configures the behavior of the system when a download is in progress.
+   * <p>
+   * When {@code disableOnClick} is set to {@code true}, the system prevents the UI from starting an
+   * additional download of the same kind while one is already in progress. Downloads from other UIs
+   * are still allowed. When set to {@code false}, concurrent downloads are permitted.
+   * </p>
+   *
+   * @param disableOnClick Whether to prevent additional downloads during an ongoing download.
+   */
+  public void setDisableOnClick(boolean disableOnClick) {
+    this.disableOnClick = disableOnClick;
   }
 
   /**
