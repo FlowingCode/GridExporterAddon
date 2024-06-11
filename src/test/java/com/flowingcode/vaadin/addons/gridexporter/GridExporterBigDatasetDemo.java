@@ -115,5 +115,8 @@ public class GridExporterBigDatasetDemo extends Div {
     exporter.setConcurrentDownloadCost(9);
     // end-block
 
+    // Prevents additional downloads from starting while one is already in progress
+    exporter.setDisableOnClick(true);
   }
+
 }

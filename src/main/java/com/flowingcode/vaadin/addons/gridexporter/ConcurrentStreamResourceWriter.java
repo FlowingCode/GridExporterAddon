@@ -158,6 +158,36 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
   protected abstract void onTimeout();
 
   /**
+   * Callback method that is invoked when a download is accepted.
+   * <p>
+   * This method is called at the start of the download process, right after the
+   * {@link #accept(OutputStream, VaadinSession) accept} method is invoked and it has been
+   * determined that the download can proceed. Subclasses should implement this method to perform
+   * any necessary actions before the download begins, such as initializing resources, logging, or
+   * updating the UI to reflect the start of the download.
+   * <p>
+   * Note that this method is called before any semaphore permits are acquired, so it is executed
+   * regardless of whether the semaphore is enabled or not.
+   * </p>
+   */
+  protected abstract void onAccept();
+
+  /**
+   * Callback method that is invoked when a download finishes.
+   * <p>
+   * This method is called at the end of the download process, right before the
+   * {@link #accept(OutputStream, VaadinSession) accept} method returns, regardless of whether the
+   * download was successful, timed out, or encountered an error. Subclasses should implement this
+   * method to perform any necessary actions after the download completes, such as releasing
+   * resources, logging, or updating the UI to reflect the completion of the download.
+   * <p>
+   * Note that this method is always called, even if an exception is thrown during the download
+   * process, ensuring that any necessary cleanup can be performed.
+   * </p>
+   */
+  protected abstract void onFinish();
+
+  /**
    * Handles {@code stream} (writes data to it) using {@code session} as a context.
    * <p>
    * Note that the method is not called under the session lock. It means that if implementation
@@ -175,33 +205,37 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
    */
   @Override
   public final void accept(OutputStream stream, VaadinSession session) throws IOException {
+    onAccept();
+    try {
+      if (!enabled) {
+        delegate.accept(stream, session);
+      } else {
 
-    if (!enabled) {
-      delegate.accept(stream, session);
-    } else {
+        try {
 
-      try {
-
-        int permits;
-        float cost = getCost(session);
-        synchronized (semaphore) {
-          permits = costToPermits(cost, semaphore.maxPermits);
-        }
-
-        if (semaphore.tryAcquire(permits, getTimeout(), TimeUnit.NANOSECONDS)) {
-          try {
-            delegate.accept(stream, session);
-          } finally {
-            semaphore.release(permits);
+          int permits;
+          float cost = getCost(session);
+          synchronized (semaphore) {
+            permits = costToPermits(cost, semaphore.maxPermits);
           }
-        } else {
-          onTimeout();
-          throw new InterruptedByTimeoutException();
+
+          if (semaphore.tryAcquire(permits, getTimeout(), TimeUnit.NANOSECONDS)) {
+            try {
+              delegate.accept(stream, session);
+            } finally {
+              semaphore.release(permits);
+            }
+          } else {
+            onTimeout();
+            throw new InterruptedByTimeoutException();
+          }
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw (IOException) new InterruptedIOException().initCause(e);
         }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw (IOException) new InterruptedIOException().initCause(e);
       }
+    } finally {
+      onFinish();
     }
   }
 
