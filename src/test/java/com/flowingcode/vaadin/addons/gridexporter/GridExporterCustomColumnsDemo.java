@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
-@PageTitle("Grid Exporter Addon Custom Columns Demo")
+@PageTitle("Custom Columns")
 @Route(value = "gridexporter/custom-columns", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
 public class GridExporterCustomColumnsDemo extends Div {

@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
-@PageTitle("Grid Exporter Addon Custom Templates Demo")
+@PageTitle("Custom Templates")
 @Route(value = "gridexporter/custom", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
 public class GridExporterCustomTemplateDemo extends Div {

@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
-@PageTitle("Grid Exporter Addon Basic Demo")
+@PageTitle("Basic Demo")
 @Route(value = "gridexporter/basic", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
 public class GridExporterDemo extends Div {

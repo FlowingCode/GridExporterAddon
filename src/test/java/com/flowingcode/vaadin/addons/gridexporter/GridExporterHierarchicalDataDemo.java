@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
-@PageTitle("Grid Exporter Hierarchical Data Demo")
+@PageTitle("Hierarchical Data")
 @Route(value = "gridexporter/hierarchical", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
 public class GridExporterHierarchicalDataDemo extends Div {

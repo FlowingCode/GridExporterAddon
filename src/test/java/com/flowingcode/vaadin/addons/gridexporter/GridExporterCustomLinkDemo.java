@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
-@PageTitle("Grid Exporter Addon Custom Link Demo")
+@PageTitle("Custom Link")
 @Route(value = "gridexporter/custom-link", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
 public class GridExporterCustomLinkDemo extends Div {

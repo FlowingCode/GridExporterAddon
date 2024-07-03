@@ -39,7 +39,7 @@ import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
 @DemoSource("/src/test/java/com/flowingcode/vaadin/addons/gridexporter/VaadinServiceInitListenerImpl.java")
-@PageTitle("Grid Exporter Addon Big Dataset Demo")
+@PageTitle("Big Dataset")
 @Route(value = "gridexporter/bigdataset", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
 public class GridExporterBigDatasetDemo extends Div {
