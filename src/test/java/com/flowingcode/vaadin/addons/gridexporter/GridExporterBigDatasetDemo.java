@@ -21,6 +21,8 @@ package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.flowingcode.vaadin.addons.demo.DemoSource;
 import com.flowingcode.vaadin.addons.demo.SourceCodeViewer;
+import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
+import com.flowingcode.vaadin.addons.gridhelpers.HeightMode;
 import com.github.javafaker.Faker;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.grid.Grid;
@@ -38,7 +40,7 @@ import java.util.stream.IntStream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
-@DemoSource("/src/test/java/com/flowingcode/vaadin/addons/gridexporter/VaadinServiceInitListenerImpl.java")
+@DemoSource(clazz = VaadinServiceInitListenerImpl.class)
 @PageTitle("Big Dataset")
 @Route(value = "gridexporter/bigdataset", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
@@ -80,9 +82,12 @@ public class GridExporterBigDatasetDemo extends Div {
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
 
-    // begin-block concurrent
+    // show-source add(grid);
+
     // #if vaadin eq 0
-    Html concurrent = new Html(
+    GridHelper.setHeightByRows(grid, 6);
+    GridHelper.setHeightMode(grid, HeightMode.ROW);
+    Html block1 = new Html(
         """
             <div>
             This configuration prepares the exporter for the BigDataset demo, enabling it to manage resource-intensive
@@ -90,19 +95,25 @@ public class GridExporterBigDatasetDemo extends Div {
             concurrent downloads, and the big dataset exporter is configured with a cost of 9, while other exporters
             handling smaller datasets retain the default cost of 1. This customization allows a combination of one large
             dataset download alongside one small dataset download, or up to 10 concurrent downloads of smaller datasets
-            when no big dataset is being exported.<p>
-
+            when no big dataset is being exported.
+            </div>""");
+    Html block2 = new Html(
+        """
+            <div>
             Additionally, <code>setConcurrentDownloadTimeout</code> enforces a timeout for acquiring the necessary permits
             during a download operation. If the permits are not obtained within the specified timeframe, the download
             request will be aborted and the <code>DownloadTimeoutEvent</code> listener will execute, preventing prolonged
             waiting periods, especially during peak system loads.
             </div>""");
-    add(concurrent);
+
+    add(block1, grid, block2);
+    SourceCodeViewer.highlightOnHover(block1, "concurrent");
+    SourceCodeViewer.highlightOnHover(block2,
+        "VaadinServiceInitListenerImpl.java#setConcurrentDownloadTimeout");
     // #endif
-    SourceCodeViewer.highlightOnHover(concurrent, "concurrent");
+    // begin-block concurrent
     exporter.setConcurrentDownloadCost(9);
     // end-block
 
-    add(grid);
   }
 }
