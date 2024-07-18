@@ -22,6 +22,7 @@ package com.flowingcode.vaadin.addons.gridexporter;
 import com.flowingcode.vaadin.addons.fontawesome.FontAwesome;
 import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
 import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.ColumnPathRenderer;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
@@ -334,6 +335,11 @@ public class GridExporter<T> implements Serializable {
         // Since the reasonable timeout would depend on the duration of "any other download", it
         // makes sense that it's a global setting instead of a per-instance setting.
         return concurrentDownloadTimeoutNanos;
+      }
+
+      @Override
+      protected UI getUI() {
+        return grid.getUI().orElse(null);
       }
 
       @Override

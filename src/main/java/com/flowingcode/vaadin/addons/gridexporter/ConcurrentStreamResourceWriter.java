@@ -1,11 +1,13 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.StreamResourceWriter;
 import com.vaadin.flow.server.VaadinSession;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.channels.InterruptedByTimeoutException;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
@@ -148,6 +150,22 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
   }
 
   /**
+   * Returns the UI associated with the current download.
+   * <p>
+   * This method is used to ensure that the UI is still attached to the current session when a
+   * download is initiated. Implementations should return the appropriate UI instance.
+   * </p>
+   *
+   * @return the {@link UI} instance associated with the current download, or {@code null} if no UI
+   *         is available.
+   */
+  protected abstract UI getUI();
+
+  private UI getAttachedUI() {
+    return Optional.ofNullable(getUI()).filter(UI::isAttached).orElse(null);
+  }
+
+  /**
    * Callback method that is invoked when a timeout occurs while trying to acquire a permit for
    * starting a download.
    * <p>
@@ -181,15 +199,19 @@ abstract class ConcurrentStreamResourceWriter implements StreamResourceWriter {
     } else {
 
       try {
-
         int permits;
         float cost = getCost(session);
         synchronized (semaphore) {
           permits = costToPermits(cost, semaphore.maxPermits);
         }
 
+        UI ui = getAttachedUI();
+
         if (semaphore.tryAcquire(permits, getTimeout(), TimeUnit.NANOSECONDS)) {
           try {
+            if (ui != null && getAttachedUI()!=ui) {
+              throw new DetachedIOException();
+            }
             delegate.accept(stream, session);
           } finally {
             semaphore.release(permits);
