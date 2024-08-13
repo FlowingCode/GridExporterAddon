@@ -87,8 +87,6 @@ class CsvStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
       if (footers.length > 0) {
         writer.writeNext(footers);
       }
-    } finally {
-      IOUtils.closeQuietly(out);
     }
   }
 
