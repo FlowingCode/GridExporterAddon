@@ -57,8 +57,7 @@ class PdfStreamResourceWriter<T> extends DocxStreamResourceWriter<T> {
 
                     Docx4J.toPDF(wordMLPackage, out);
     } catch (Docx4JException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new RuntimeException("Problem when exporting data to PDF file", e);
     }
   }
 }
