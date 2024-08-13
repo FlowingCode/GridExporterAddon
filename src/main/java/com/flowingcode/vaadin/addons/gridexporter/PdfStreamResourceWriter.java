@@ -56,8 +56,6 @@ class PdfStreamResourceWriter<T> extends DocxStreamResourceWriter<T> {
                     MainDocumentPart documentPart = wordMLPackage.getMainDocumentPart();
 
                     Docx4J.toPDF(wordMLPackage, out);
-    } catch (IOException e) {
-      LOGGER.error("Problem generating export", e);
     } catch (Docx4JException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();

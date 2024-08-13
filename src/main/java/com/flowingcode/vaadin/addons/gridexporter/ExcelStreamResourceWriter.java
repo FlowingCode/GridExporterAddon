@@ -77,11 +77,7 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
 
   @Override
   public void accept(OutputStream out, VaadinSession session) throws IOException {
-    try {
-      createWorkbook(session).write(out);
-    } catch (IOException e) {
-      LOGGER.error("Problem generating export", e);
-    }
+    createWorkbook(session).write(out);
   }
 
   private Workbook createWorkbook(VaadinSession session) {

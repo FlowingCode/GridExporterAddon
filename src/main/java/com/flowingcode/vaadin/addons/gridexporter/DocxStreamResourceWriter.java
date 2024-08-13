@@ -67,11 +67,7 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
 
   @Override
   public void accept(OutputStream out, VaadinSession session) throws IOException {
-    try {
-      createDoc(session).write(out);
-    } catch (IOException e) {
-      LOGGER.error("Problem generating export", e);
-    }
+    createDoc(session).write(out);
   }
 
   protected XWPFDocument createDoc(VaadinSession session) throws IOException {
