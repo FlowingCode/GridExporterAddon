@@ -98,7 +98,7 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
       List<Pair<String, Column<T>>> headers = getGridHeaders(exporter.grid);
 
       fillHeaderOrFooter(sheet, cell, headers, true);
-      if (exporter.autoMergeTitle && titleCell != null) {
+      if (exporter.autoMergeTitle && titleCell != null && exporter.getColumns().size()>1) {
         sheet.addMergedRegion(new CellRangeAddress(titleCell.getRowIndex(), titleCell.getRowIndex(),
             titleCell.getColumnIndex(), titleCell.getColumnIndex() + headers.size() - 1));
       }
