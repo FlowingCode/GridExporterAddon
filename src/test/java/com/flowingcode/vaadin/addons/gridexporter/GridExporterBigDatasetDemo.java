@@ -58,7 +58,7 @@ public class GridExporterBigDatasetDemo extends Div {
     BigDecimal[] total = new BigDecimal[1];
     total[0] = BigDecimal.ZERO;
     List<Person> persons =
-        IntStream.range(0, 7000)
+        IntStream.range(0, 1400)
             .asLongStream()
             .mapToObj(
                 number -> {
