@@ -10,8 +10,8 @@ import java.util.Objects;
  * preventing other listeners from processing the event.
  * </p>
  *
- * @param <T> the type of the GridExporter source
- * @see GridExporter#setConcurrentDownloadTimeout(long, java.util.concurrent.TimeUnit)
+ * @see GridExporterConcurrentSettings#setConcurrentDownloadTimeout(long,
+ *      java.util.concurrent.TimeUnit)
  */
 @SuppressWarnings("serial")
 public class ConcurrentDownloadTimeoutEvent extends EventObject {
