@@ -1,12 +1,15 @@
 package com.flowingcode.vaadin.addons.gridexporter.test;
 
 import static org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import com.flowingcode.vaadin.addons.gridexporter.ConfigurableConcurrentStreamResourceWriter;
 import com.flowingcode.vaadin.addons.gridexporter.GridExporter;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.StreamResourceWriter;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinServletService;
@@ -15,6 +18,7 @@ import java.io.IOException;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Exchanger;
@@ -76,6 +80,7 @@ public class ConcurrentExportTests {
 
   @Before
   public void before() {
+    GridExporter.setFailOnUiChange(false);
     barrier = null;
     if (!lock.tryLock()) {
       throw new IllegalStateException(
@@ -100,6 +105,8 @@ public class ConcurrentExportTests {
 
     MockDownload withCost(float cost);
 
+    void detach();
+
     Throwable get() throws InterruptedException;
 
     MockDownload await() throws InterruptedException;
@@ -107,10 +114,21 @@ public class ConcurrentExportTests {
     MockDownload start();
 
     boolean wasInterruptedByTimeout();
+
+    boolean isFinished();
+
+    boolean isAccepted();
+  }
+
+  private Thread newThread(Runnable target) {
+    Thread thread = new Thread(target);
+    threads.add(thread);
+    return thread;
   }
 
   private MockDownload newDownload() {
 
+    CyclicBarrier barrier = this.barrier;
     CountDownLatch latch = new CountDownLatch(1);
 
     ConcurrentStreamResourceWriter writer =
@@ -119,6 +137,7 @@ public class ConcurrentExportTests {
           await(barrier);
         });
 
+    writer.setUi(new UI());
     Exchanger<Throwable> exchanger = new Exchanger<>();
 
     Thread thread = newThread(() -> {
@@ -137,8 +156,6 @@ public class ConcurrentExportTests {
         return;
       }
     });
-
-    threads.add(thread);
 
     return new MockDownload() {
       @Override
@@ -186,8 +203,23 @@ public class ConcurrentExportTests {
       }
 
       @Override
+      public void detach() {
+        writer.setUi(null);
+      }
+
+      @Override
       public boolean wasInterruptedByTimeout() {
         return writer.interruptedByTimeout;
+      }
+
+      @Override
+      public boolean isAccepted() {
+        return writer.accepted;
+      }
+
+      @Override
+      public boolean isFinished() {
+        return writer.finished;
       }
     };
   }
@@ -327,6 +359,51 @@ public class ConcurrentExportTests {
     assertThat(q1.get(), nullValue());
     assertThat(q2.get(), throwsInterruptedByTimeout());
     assertThat(q3.get(), throwsInterruptedByTimeout());
+  }
+
+
+  @Test(timeout = TEST_TIMEOUT)
+  public void testAcceptFinish() throws InterruptedException {
+    ConcurrentStreamResourceWriter.setLimit(2);
+    initializeCyclicBarrier(2);
+    var q1 = newDownload().await();
+    assertTrue("Download has not been accepted", q1.isAccepted());
+    assertFalse("Download has finished too early", q1.isFinished());
+    var q2 = newDownload().await();
+    assertTrue("Download has not been accepted", q2.isAccepted());
+    assertThat(q1.get(), nullValue());
+    assertThat(q2.get(), nullValue());
+    assertTrue("Download has not finished", q1.isFinished());
+    assertTrue("Download has not finished", q2.isFinished());
+  }
+
+  @Test(timeout = TEST_TIMEOUT)
+  public void testFailOnUiClose() throws InterruptedException, BrokenBarrierException {
+    GridExporter.setFailOnUiChange(true);
+    ConcurrentStreamResourceWriter.setLimit(1);
+
+    initializeCyclicBarrier(2);
+    CyclicBarrier b1 = barrier;
+    var q1 = newDownload().await();
+    assertTrue("Download has not been accepted", q1.isAccepted());
+    assertFalse("Download has finished too early", q1.isFinished());
+
+    initializeCyclicBarrier(2);
+    var q2 = newDownload().withTimeout(TEST_TIMEOUT).start();
+    assertTrue("Download has not been accepted", q1.isAccepted());
+    assertFalse("Download has finished too early", q1.isFinished());
+
+    // detach while the semaphore is held by q1
+    q2.detach();
+
+    // await on b1 so that q1 releases the semaphore
+    b1.await();
+    assertThat(q1.get(), nullValue());
+
+    // with "FailOnUiChange" the other thread never arrives at the barrier
+    assertThat(barrier.getNumberWaiting(), equalTo(0));
+    assertThat(q2.get(), instanceOf(IOException.class));
+
   }
 
 }
