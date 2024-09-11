@@ -13,6 +13,8 @@ import com.vaadin.flow.server.VaadinServletService;
 import com.vaadin.flow.server.VaadinSession;
 import java.io.IOException;
 import java.nio.channels.InterruptedByTimeoutException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Exchanger;
@@ -21,11 +23,13 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 @SuppressWarnings("serial")
+@net.jcip.annotations.NotThreadSafe
 public class ConcurrentExportTests {
 
   private static final int TEST_TIMEOUT = 5000;
@@ -63,6 +67,8 @@ public class ConcurrentExportTests {
   }
 
   private CyclicBarrier barrier;
+  private final static List<Thread> threads = new ArrayList<>();
+  private final static Lock lock = new ReentrantLock();
 
   private void initializeCyclicBarrier(int parties) {
     barrier = new CyclicBarrier(parties);
@@ -71,6 +77,17 @@ public class ConcurrentExportTests {
   @Before
   public void before() {
     barrier = null;
+    if (!lock.tryLock()) {
+      throw new IllegalStateException(
+          this.getClass().getSimpleName() + "test cannot be run in parallel");
+    }
+    threads.forEach(Thread::interrupt);
+    threads.clear();
+  }
+
+  @After
+  public void after() {
+    lock.unlock();
   }
 
   @SuppressWarnings("unchecked")
@@ -104,7 +121,7 @@ public class ConcurrentExportTests {
 
     Exchanger<Throwable> exchanger = new Exchanger<>();
 
-    Thread thread = new Thread(() -> {
+    Thread thread = newThread(() -> {
 
       Throwable throwable = null;
       try {
@@ -117,9 +134,11 @@ public class ConcurrentExportTests {
       try {
         exchanger.exchange(throwable);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        return;
       }
     });
+
+    threads.add(thread);
 
     return new MockDownload() {
       @Override
