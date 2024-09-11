@@ -42,7 +42,6 @@ import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.StreamResourceWriter;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.shared.Registration;
-import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -83,14 +82,10 @@ public class GridExporter<T> implements Serializable {
   /** The standard unit of resource usage for concurrent downloads. */
   public static final float DEFAULT_COST = 1.0f;
 
-  private static long concurrentDownloadTimeoutNanos = 0L;
-
   private boolean disableOnClick;
 
   private float concurrentDownloadCost = DEFAULT_COST;
   private final List<SerializableConsumer<ConcurrentDownloadTimeoutEvent>> instanceDownloadTimeoutListeners =
-      new CopyOnWriteArrayList<>();
-  private static final List<SerializableConsumer<ConcurrentDownloadTimeoutEvent>> globalDownloadTimeoutListeners =
       new CopyOnWriteArrayList<>();
 
   static final String COLUMN_VALUE_PROVIDER_DATA = "column-value-provider-data";
@@ -370,7 +365,7 @@ public class GridExporter<T> implements Serializable {
         //
         // Since the reasonable timeout would depend on the duration of "any other download", it
         // makes sense that it's a global setting instead of a per-instance setting.
-        return concurrentDownloadTimeoutNanos;
+        return GridExporterConcurrentSettings.getConcurrentDownloadTimeout(TimeUnit.NANOSECONDS);
       }
 
       @Override
@@ -410,11 +405,12 @@ public class GridExporter<T> implements Serializable {
    * listener stops the event propagation, subsequent listeners will not be notified.
    */
   private void fireConcurrentDownloadTimeout() {
-    if (!instanceDownloadTimeoutListeners.isEmpty() || !globalDownloadTimeoutListeners.isEmpty()) {
+    var globalListeners = GridExporterConcurrentSettings.getGlobalDownloadTimeoutListeners();
+    if (!instanceDownloadTimeoutListeners.isEmpty() || !globalListeners.isEmpty()) {
       grid.getUI().ifPresent(ui -> ui.access(() -> {
         ConcurrentDownloadTimeoutEvent ev = new ConcurrentDownloadTimeoutEvent(GridExporter.this);
         Stream.concat(instanceDownloadTimeoutListeners.stream(),
-            globalDownloadTimeoutListeners.stream()).forEach(listener -> {
+            globalListeners.stream()).forEach(listener -> {
               if (!ev.isPropagationStopped()) {
                 listener.accept(ev);
               }
@@ -438,78 +434,6 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * Adds a global listener for concurrent download timeout events.
-   * <p>
-   * The listener will be called whenever a concurrent download timeout event occurs.
-   * <p>
-   * Note that instance-specific listeners take precedence over global listeners. If an instance
-   * listener stops the event propagation by calling
-   * {@link ConcurrentDownloadTimeoutEvent#stopPropagation() stopPropagation()}, the global
-   * listeners will not be notified.
-   *
-   * @param listener the listener to be added
-   * @return a {@link Registration} object that can be used to remove the listener
-   */
-  public static Registration addGlobalConcurrentDownloadTimeoutEvent(
-      SerializableConsumer<ConcurrentDownloadTimeoutEvent> listener) {
-    globalDownloadTimeoutListeners.add(0, listener);
-    return () -> globalDownloadTimeoutListeners.remove(listener);
-  }
-
-  /**
-   * Sets the limit for the {@linkplain #setConcurrentDownloadCost(float) cost of concurrent
-   * downloads}. If all the downloads have a cost of {@link #DEFAULT_COST}, the limit represents the
-   * number of concurrent downloads that are allowed.
-   * <p>
-   * Finite limits are capped to {@link #MAX_COST} (32767). If the limit is
-   * {@link Float#POSITIVE_INFINITY POSITIVE_INFINITY}, concurrent downloads will not be limited.
-   *
-   * @param limit the maximum cost of concurrent downloads allowed
-   * @throws IllegalArgumentException if the limit is zero or negative.
-   */
-  public static void setConcurrentDownloadLimit(float limit) {
-    ConcurrentStreamResourceWriter.setLimit(limit);
-  }
-
-  /**
-   * Returns the limit for the number of concurrent downloads.
-   *
-   * @return the limit for the number of concurrent downloads, or {@link Float#POSITIVE_INFINITY} if
-   *         concurrent downloads are not limited.
-   */
-  public static float getConcurrentDownloadLimit() {
-    return ConcurrentStreamResourceWriter.getLimit();
-  }
-
-  /**
-   * Configures the behavior of the stream operation when the UI changes during execution.
-   *
-   * @param failOnUiChange If {@code true}, the operation will throw an {@link IOException} if the
-   *        UI changes (e.g., becomes detached) after acquiring the semaphore. If {@code false}, the
-   *        operation will proceed regardless of any UI changes.
-   */
-  public static void setFailOnUiChange(boolean failOnUiChange) {
-    ConcurrentStreamResourceWriter.setFailOnUiChange(failOnUiChange);
-  }
-
-  /**
-   * Sets the timeout for acquiring a permit to start a download when the
-   * {@linkplain #setConcurrentDownloadLimit(float) maximum number of concurrent downloads} is
-   * reached. If the timeout is less than or equal to zero, the downloads will fail immediately if
-   * no enough permits can be acquired.
-   *
-   * This timeout is crucial for preventing the system from hanging indefinitely while waiting for
-   * available resources. If the timeout expires before a permit can be acquired, the download is
-   * cancelled.
-   *
-   * @param timeout the maximum time to wait for a permit
-   * @param unit the time unit of the {@code timeout} argument
-   */
-  public static void setConcurrentDownloadTimeout(long timeout, TimeUnit unit) {
-    GridExporter.concurrentDownloadTimeoutNanos = unit.toNanos(timeout);
-  }
-
-  /**
    * Configures the behavior of the system when a download is in progress.
    * <p>
    * When {@code disableOnClick} is set to {@code true}, the system prevents the UI from starting an
@@ -527,7 +451,7 @@ public class GridExporter<T> implements Serializable {
    * Sets the cost for concurrent downloads. This cost is used to determine the number of permits
    * required for downloads to proceed, thereby controlling the concurrency level. At any given
    * time, the sum of the costs of all concurrent downloads will not exceed the limit set by
-   * {@link #setConcurrentDownloadLimit(float)}.
+   * {@link GridExporterConcurrentSettings#setConcurrentDownloadLimit(float)}.
    * <p>
    *
    * The cost is represented as a float to allow for more granular control over resource usage. By
