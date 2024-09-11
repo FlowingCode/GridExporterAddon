@@ -10,17 +10,17 @@ public class VaadinServiceInitListenerImpl implements VaadinServiceInitListener 
 
   @Override
   public void serviceInit(ServiceInitEvent event) {
-    GridExporter.setConcurrentDownloadLimit(10);
+    GridExporterConcurrentSettings.setConcurrentDownloadLimit(10);
 
     // begin-block setConcurrentDownloadTimeout
-    GridExporter.setConcurrentDownloadTimeout(5, TimeUnit.SECONDS);
-    GridExporter.addGlobalConcurrentDownloadTimeoutEvent(ev -> {
+    GridExporterConcurrentSettings.setConcurrentDownloadTimeout(5, TimeUnit.SECONDS);
+    GridExporterConcurrentSettings.addGlobalConcurrentDownloadTimeoutEvent(ev -> {
       Notification.show("System is busy. Please try again later.")
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     });
     // end-block
 
-    GridExporter.setFailOnUiChange(true);
+    GridExporterConcurrentSettings.setFailOnUiChange(true);
 
   }
 

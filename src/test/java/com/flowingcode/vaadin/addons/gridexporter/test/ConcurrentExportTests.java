@@ -9,6 +9,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import com.flowingcode.vaadin.addons.gridexporter.ConfigurableConcurrentStreamResourceWriter;
 import com.flowingcode.vaadin.addons.gridexporter.GridExporter;
+import com.flowingcode.vaadin.addons.gridexporter.GridExporterConcurrentSettings;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.StreamResourceWriter;
 import com.vaadin.flow.server.VaadinService;
@@ -80,7 +81,7 @@ public class ConcurrentExportTests {
 
   @Before
   public void before() {
-    GridExporter.setFailOnUiChange(false);
+    GridExporterConcurrentSettings.setFailOnUiChange(false);
     barrier = null;
     if (!lock.tryLock()) {
       throw new IllegalStateException(
@@ -379,7 +380,7 @@ public class ConcurrentExportTests {
 
   @Test(timeout = TEST_TIMEOUT)
   public void testFailOnUiClose() throws InterruptedException, BrokenBarrierException {
-    GridExporter.setFailOnUiChange(true);
+    GridExporterConcurrentSettings.setFailOnUiChange(true);
     ConcurrentStreamResourceWriter.setLimit(1);
 
     initializeCyclicBarrier(2);
