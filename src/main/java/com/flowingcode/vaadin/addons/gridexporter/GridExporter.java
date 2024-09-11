@@ -494,7 +494,7 @@ public class GridExporter<T> implements Serializable {
 
   /**
    * Sets the timeout for acquiring a permit to start a download when the
-   * {@linkplain #setConcurrentDownloadLimit(int) maximum number of concurrent downloads} is
+   * {@linkplain #setConcurrentDownloadLimit(float) maximum number of concurrent downloads} is
    * reached. If the timeout is less than or equal to zero, the downloads will fail immediately if
    * no enough permits can be acquired.
    *
@@ -687,7 +687,7 @@ public class GridExporter<T> implements Serializable {
    * Configure if the column is exported or not
    *
    * @param column
-   * @param export: true will be included in the exported file, false will not be included
+   * @param export true will be included in the exported file, false will not be included
    */
   public void setExportColumn(Column<T> column, boolean export) {
     ComponentUtil.setData(column, COLUMN_EXPORTED_PROVIDER_DATA, export);
@@ -755,7 +755,7 @@ public class GridExporter<T> implements Serializable {
    *
    * @param column
    * @param dateFormat
-   * @param excelFormat
+   * @param excelFormatProvider
    */
   public void setDateColumnFormatProvider(Column<T> column, DateFormat dateFormat,
       ValueProvider<T, String> excelFormatProvider) {
@@ -838,8 +838,6 @@ public class GridExporter<T> implements Serializable {
 
   /**
    * Get columns in the positions specified by {@link GridExporter.setColumnPosition}
-   *
-   * @return
    */
   public List<Column<T>> getColumnsOrdered() {
     return columns == null
