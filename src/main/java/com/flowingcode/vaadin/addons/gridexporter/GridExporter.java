@@ -761,7 +761,7 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * Get columns in the positions specified by {@link GridExporter.setColumnPosition}
+   * Get columns in the positions specified by {@link GridExporter#setColumnPosition(Column, int)}
    */
   public List<Column<T>> getColumnsOrdered() {
     return columns == null
