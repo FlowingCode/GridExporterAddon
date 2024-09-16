@@ -169,7 +169,7 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
     return dataStream;
   }
 
-  protected Stream<T> obtainFlattenedHierarchicalDataStream(final Grid<T> grid) {
+  private Stream<T> obtainFlattenedHierarchicalDataStream(final Grid<T> grid) {
     ArrayList<T> flattenedData = fetchDataRecursive(grid, null);
     return flattenedData.stream();
   }
