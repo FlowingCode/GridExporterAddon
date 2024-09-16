@@ -391,7 +391,7 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
 
   private Workbook getBaseTemplateWorkbook() {
     try {
-      InputStream inp = this.getClass().getResourceAsStream(template);
+      InputStream inp = this.getClass().getResourceAsStream(getTemplate());
       Workbook result = WorkbookFactory.create(inp);
       return result;
     } catch (Exception e) {
