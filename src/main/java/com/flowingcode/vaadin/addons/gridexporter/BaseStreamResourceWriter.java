@@ -174,7 +174,7 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
     return flattenedData.stream();
   }
 
-  protected ArrayList<T> fetchDataRecursive(final Grid<T> grid, T parent) {
+  private ArrayList<T> fetchDataRecursive(final Grid<T> grid, T parent) {
     ArrayList<T> result = new ArrayList<>();
 
     if (parent != null) result.add(parent);
