@@ -361,7 +361,7 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
   }
 
   private XWPFDocument getBaseTemplateDoc() throws EncryptedDocumentException, IOException {
-    InputStream inp = this.getClass().getResourceAsStream(template);
+    InputStream inp = this.getClass().getResourceAsStream(getTemplate());
     return new XWPFDocument(inp);
   }
 }
