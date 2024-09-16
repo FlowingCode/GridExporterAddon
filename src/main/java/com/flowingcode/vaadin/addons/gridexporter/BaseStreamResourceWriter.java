@@ -48,7 +48,7 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BaseStreamResourceWriter.class);
 
-  protected GridExporter<T> exporter;
+  protected final GridExporter<T> exporter;
   private String template;
 
   public BaseStreamResourceWriter(GridExporter<T> exporter) {
