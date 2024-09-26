@@ -114,7 +114,7 @@ public class GridExporter<T> implements Serializable {
 
   String title = "Grid Export";
 
-  String fileName = "export";
+  private SerializableSupplier<String> fileNameSupplier = () -> "export";
 
   int sheetNumber = 0;
 
@@ -298,7 +298,7 @@ public class GridExporter<T> implements Serializable {
   }
 
   public GridExporterStreamResource getDocxStreamResource(String template) {
-    return new GridExporterStreamResource(fileName + ".docx",
+    return new GridExporterStreamResource(getFileName("docx"),
         makeConcurrentWriter(new DocxStreamResourceWriter<>(this, template)));
   }
 
@@ -307,12 +307,12 @@ public class GridExporter<T> implements Serializable {
   }
 
   public GridExporterStreamResource getPdfStreamResource(String template) {
-    return new GridExporterStreamResource(fileName + ".pdf",
+    return new GridExporterStreamResource(getFileName("pdf"),
         makeConcurrentWriter(new PdfStreamResourceWriter<>(this, template)));
   }
 
   public StreamResource getCsvStreamResource() {
-    return new StreamResource(fileName + ".csv", new CsvStreamResourceWriter<>(this));
+    return new StreamResource(getFileName("csv"), new CsvStreamResourceWriter<>(this));
   }
 
   public GridExporterStreamResource getExcelStreamResource() {
@@ -320,7 +320,7 @@ public class GridExporter<T> implements Serializable {
   }
 
   public GridExporterStreamResource getExcelStreamResource(String template) {
-    return new GridExporterStreamResource(fileName + ".xlsx",
+    return new GridExporterStreamResource(getFileName("xlsx"),
         makeConcurrentWriter(new ExcelStreamResourceWriter<>(this, template)));
   }
 
@@ -490,7 +490,11 @@ public class GridExporter<T> implements Serializable {
   }
 
   public String getFileName() {
-    return fileName;
+    return fileNameSupplier.get();
+  }
+
+  private String getFileName(String extension) {
+    return Objects.requireNonNull(getFileName()) + "." + extension;
   }
 
   /**
@@ -499,7 +503,19 @@ public class GridExporter<T> implements Serializable {
    * @param fileName
    */
   public void setFileName(String fileName) {
-    this.fileName = fileName;
+    Objects.requireNonNull(fileName, "File name cannot be null");
+    fileNameSupplier = () -> fileName;
+  }
+
+  /**
+   * Sets a dynamic filename for the exported file.
+   *
+   * @param fileNameSupplier a supplier that returns the name of the exported file, without
+   *        extension.
+   */
+  public void setFileName(SerializableSupplier<String> fileNameSupplier) {
+    this.fileNameSupplier =
+        Objects.requireNonNull(fileNameSupplier, "File name supplier cannot be null");
   }
 
   public boolean isAutoAttachExportButtons() {
