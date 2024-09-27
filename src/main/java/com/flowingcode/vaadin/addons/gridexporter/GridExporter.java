@@ -124,6 +124,8 @@ public class GridExporter<T> implements Serializable {
 
   SerializableSupplier<String> nullValueSupplier;
 
+  /** @deprecated. This attribute is incremented only when exporting DOCX, but it's never reset. */
+  @Deprecated(since = "2.5.0", forRemoval = true)
   public int totalcells = 0;
 
   private ButtonsAlignment buttonsAlignment = ButtonsAlignment.RIGHT;
