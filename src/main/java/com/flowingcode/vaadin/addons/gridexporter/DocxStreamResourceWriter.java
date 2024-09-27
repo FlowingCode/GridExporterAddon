@@ -167,6 +167,7 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
             Iterator<Column<T>> iterator = exporter.getColumns().iterator();
             while (iterator.hasNext()) {
               iterator.next();
+              // preserve increment for deprecated attribute
               exporter.totalcells = exporter.totalcells + 1;
               currentRow.createCell();
             }
