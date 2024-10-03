@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -94,16 +95,20 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       }
 
       Cell cell = findCellWithPlaceHolder(sheet, exporter.headersPlaceHolder);
-      List<Pair<String, Column<T>>> headers = getGridHeaders(exporter.grid);
+      List<Pair<List<String>, Column<T>>> headersTest = getGridHeaders(exporter.grid);
+      List<Pair<String, Column<T>>> headers = headersTest.stream()
+    		  .map(pair -> 
+    		  Pair.of(pair.getLeft().get(0), pair.getRight())
+    		  ).toList();
 
-      fillHeaderOrFooter(sheet, cell, headers, true);
+      fillHeaderOrFooter(sheet, cell, headersTest, true);
       if (exporter.autoMergeTitle && titleCell != null) {
         sheet.addMergedRegion(
             new CellRangeAddress(
                 titleCell.getRowIndex(),
                 titleCell.getRowIndex(),
                 titleCell.getColumnIndex(),
-                titleCell.getColumnIndex() + headers.size() - 1));
+                titleCell.getColumnIndex() + headersTest.size() - 1));
       }
 
       cell = findCellWithPlaceHolder(sheet, exporter.dataPlaceHolder);
@@ -126,7 +131,7 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
       cell = findCellWithPlaceHolder(sheet, exporter.footersPlaceHolder);
       List<Pair<String, Column<T>>> footers = getGridFooters(exporter.grid);
       if (cell != null) {
-        fillHeaderOrFooter(sheet, cell, footers, false);
+        fillFooter(sheet, cell, footers, false);
       }
 
       if (exporter.isAutoSizeColumns()) {
@@ -440,39 +445,54 @@ class ExcelInputStreamFactory<T> extends BaseInputStreamFactory<T> {
     return null;
   }
 
-  private void fillHeaderOrFooter(
-      Sheet sheet,
-      Cell headersOrFootersCell,
-      List<Pair<String, Column<T>>> headersOrFooters,
-      boolean isHeader) {
-    CellStyle style = headersOrFootersCell.getCellStyle();
-    sheet.setActiveCell(headersOrFootersCell.getAddress());
-    headersOrFooters.forEach(
-        headerOrFooter -> {
-          if (!isHeader) {
-            // clear the styles before processing the column in the footer
-            ComponentUtil.setData(headerOrFooter.getRight(), COLUMN_CELLSTYLE_MAP, null);
-          }
-          Cell cell =
-              sheet
-                  .getRow(sheet.getActiveCell().getRow())
-                  .getCell(sheet.getActiveCell().getColumn());
-          if (cell == null) {
-            cell =
-                sheet
-                    .getRow(sheet.getActiveCell().getRow())
-                    .createCell(sheet.getActiveCell().getColumn());
-          }
-          cell.setCellStyle(style);
-          Object value =
-              (isHeader
-                  ? headerOrFooter.getLeft()
-                  : transformToType(headerOrFooter.getLeft(), headerOrFooter.getRight()));
-          buildCell(value, cell, headerOrFooter.getRight(), null);
-          configureAlignment(headerOrFooter.getRight(), cell, isHeader?ExcelCellType.HEADER:ExcelCellType.FOOTER);
-          sheet.setActiveCell(
-              new CellAddress(
-                  sheet.getActiveCell().getRow(), sheet.getActiveCell().getColumn() + 1));
-        });
+  private void fillFooter(Sheet sheet, Cell headersOrFootersCell,
+      List<Pair<String, Column<T>>> headersOrFooters, boolean isHeader) {
+
+    List<Pair<List<String>, Column<T>>> headersOrFootersCellSingleRow = headersOrFooters.stream()
+        .map(pair -> Pair.of(List.of(pair.getLeft()), pair.getRight())).toList();
+    fillHeaderOrFooter(sheet, headersOrFootersCell, headersOrFootersCellSingleRow, isHeader);
   }
+
+  private void fillHeaderOrFooter(Sheet sheet, Cell headersOrFootersCell,
+      List<Pair<List<String>, Column<T>>> headersOrFooters, boolean isHeader) {
+
+    CellStyle style = headersOrFootersCell.getCellStyle();
+    
+    int startRow = headersOrFootersCell.getRowIndex();
+    int currentColumn = headersOrFootersCell.getColumnIndex();
+
+    for (Pair<List<String>, Column<T>> headerOrFooter : headersOrFooters) {
+      List<String> headerTexts = headerOrFooter.getLeft();
+      Column<T> column = headerOrFooter.getRight();
+
+      if (!isHeader) {
+        ComponentUtil.setData(column, COLUMN_CELLSTYLE_MAP, null);
+      }
+
+      sheet.shiftRows(startRow, sheet.getLastRowNum(), headerTexts.size());
+
+      for (int i = 0; i < headerTexts.size(); i++) {
+        Row row = sheet.getRow(startRow + i);
+        if (row == null) {
+          row = sheet.createRow(startRow + i);
+        }
+
+        Cell cell = row.getCell(currentColumn);
+        if (cell == null) {
+          cell = row.createCell(currentColumn);
+        }
+
+        cell.setCellStyle(style);
+
+        Object value =
+            (isHeader ? headerTexts.get(i) : transformToType(headerTexts.get(i), column));
+        buildCell(value, cell, column, null);
+
+        configureAlignment(column, cell, isHeader ? ExcelCellType.HEADER : ExcelCellType.FOOTER);
+      }
+
+      currentColumn++;
+    }
+  }
+
 }
