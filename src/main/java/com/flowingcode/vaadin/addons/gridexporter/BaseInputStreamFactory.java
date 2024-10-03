@@ -23,6 +23,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.dataview.GridLazyDataView;
 import com.vaadin.flow.data.provider.AbstractBackEndDataProvider;
 import com.vaadin.flow.data.provider.DataCommunicator;
@@ -89,14 +90,54 @@ abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
     return stream;
   }
 
-  protected List<Pair<String, Column<T>>> getGridHeaders(Grid<T> grid) {
-    return exporter.getColumnsOrdered().stream()
-        .map(
-            column ->
-                ImmutablePair.of(
-                    renderCellTextContent(grid, column, GridExporter.COLUMN_HEADER), column))
-        .collect(Collectors.toList());
-  }
+  protected List<Pair<List<String>, Column<T>>> getGridHeaders(Grid<T> grid) {
+	    return exporter.getColumnsOrdered().stream()
+	        .map(column -> ImmutablePair.of(getHeaderTexts(grid, column), column))
+	        .collect(Collectors.toList());
+	}
+
+  private List<String> getHeaderTexts(Grid<T> grid, Column<T> column) {
+	    List<String> headerTexts = new ArrayList<>();
+
+	    List<HeaderRow> headerRows = grid.getHeaderRows();
+	    for (HeaderRow headerRow : headerRows) {
+	        String headerText = renderCellTextContent(grid, column, GridExporter.COLUMN_HEADER, headerRow);
+	        headerTexts.add(headerText);
+	    }
+
+	    return headerTexts;
+	}
+  
+  private String renderCellTextContent(Grid<T> grid, Column<T> column, String columnType, HeaderRow headerRow) {
+	    String headerOrFooter = (String) ComponentUtil.getData(column, columnType);
+	    
+	    if (Strings.isBlank(headerOrFooter)) {
+	        Function<Column<?>, Component> getHeaderOrFooterComponent;
+	        if (GridExporter.COLUMN_HEADER.equals(columnType)) {
+	            getHeaderOrFooterComponent = col -> col.getHeaderComponent();
+	            headerOrFooter = column.getHeaderText();
+	        } else if (GridExporter.COLUMN_FOOTER.equals(columnType)) {
+	            getHeaderOrFooterComponent = col -> col.getFooterComponent();
+	            headerOrFooter = column.getFooterText();
+	        } else {
+	            throw new IllegalArgumentException();
+	        }
+
+	        if (Strings.isBlank(headerOrFooter)) {
+	            try {
+	                Component component = getHeaderOrFooterComponent.apply(column);
+	                if (component != null) {
+	                    headerOrFooter = component.getElement().getTextRecursively();
+	                }
+	            } catch (RuntimeException e) {
+	                throw new IllegalStateException(
+	                    "Problem when trying to render header or footer cell text content", e);
+	            }
+	        }
+	    }
+
+	    return headerOrFooter;
+	}
 
   protected List<Pair<String, Column<T>>> getGridFooters(Grid<T> grid) {
     return exporter.getColumnsOrdered().stream()
