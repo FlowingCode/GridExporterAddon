@@ -9,7 +9,7 @@
 	<description>Grid Exporter Add-on for Vaadin Flow</description>
 
 	<properties>
-        <vaadin.version>24.3.9</vaadin.version>
+        <vaadin.version>23.3.15</vaadin.version>
         <selenium.version>4.1.2</selenium.version>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
@@ -165,7 +165,7 @@
 		<dependency>
 		   <groupId>com.flowingcode.addons</groupId>
 		   <artifactId>font-awesome-iron-iconset</artifactId>
-		   <version>5.2.2</version>
+		   <version>4.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.vaadin.addons.flowingcode</groupId>
