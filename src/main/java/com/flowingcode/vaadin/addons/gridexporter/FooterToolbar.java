@@ -37,7 +37,7 @@ class FooterToolbar extends Composite<HorizontalLayout> {
   private final List<FooterToolbarItem> items = new ArrayList<>();
 
   public FooterToolbar() {
-    addClassName("fc-ge-footer-toolbar");
+    getElement().getClassList().add("fc-ge-footer-toolbar");
     getContent().setSizeFull();
     getContent().setAlignItems(Alignment.CENTER);
   }
