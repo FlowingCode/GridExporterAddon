@@ -144,23 +144,28 @@
 		</dependency>
 		<dependency>
 		    <groupId>org.docx4j</groupId>
-		    <artifactId>docx4j-JAXB-Internal</artifactId>
-		    <version>8.3.8</version>
-		</dependency>
-		<dependency>
-		    <groupId>org.docx4j</groupId>
 		    <artifactId>docx4j-JAXB-ReferenceImpl</artifactId>
-		    <version>8.3.8</version>
+		    <version>11.5.0</version>
 		</dependency>
 		<dependency>
 		    <groupId>org.docx4j</groupId>
 		    <artifactId>docx4j-JAXB-MOXy</artifactId>
-		    <version>8.3.8</version>
+		    <version>11.5.0</version>
 		</dependency>
 		<dependency>
 		    <groupId>org.docx4j</groupId>
 		    <artifactId>docx4j-export-fo</artifactId>
-		    <version>8.3.8</version>
+		    <version>11.5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-compress</artifactId>
+			<version>1.27.1</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.16.1</version>
 		</dependency>
 		<dependency>
 		   <groupId>com.flowingcode.addons</groupId>
@@ -371,7 +376,7 @@
 							<doclint>none</doclint>
 							<failOnWarnings>true</failOnWarnings>
 							<links>
-								<link>https://javadoc.io/doc/com.vaadin/vaadin-platform-javadoc/${vaadin.version}</link>								
+								<link>https://javadoc.io/doc/com.vaadin/vaadin-platform-javadoc/${vaadin.version}</link>
 							</links>
 						</configuration>
 					</plugin>
@@ -533,7 +538,7 @@
 		</profile>
 		<profile>
 			<id>demo-jar</id>
-			<build>		
+			<build>
 				<plugins>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
@@ -557,7 +562,7 @@
 					</plugin>
 				</plugins>
 			</build>
-		</profile>		
+		</profile>
 	</profiles>
 
 </project>
