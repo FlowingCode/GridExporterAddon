@@ -251,22 +251,19 @@ public class GridExporter<T> implements Serializable {
 
     // at this point if the value is still null then take the only value from ColumPathRenderer VP
     if (value == null && column.getRenderer() instanceof Renderer) {
-      Renderer<T> renderer = column.getRenderer();
-      if (renderer instanceof ColumnPathRenderer) {
-        try {
-          Field provider = ColumnPathRenderer.class.getDeclaredField("provider");
-          provider.setAccessible(true);
-          ValueProvider<T, ?> vp = (ValueProvider<T, ?>) provider.get(renderer);
-          value = vp.apply(item);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-          throw new IllegalStateException("Problem obtaining value or exporting", e);
+      Renderer<T> r = (Renderer<T>) column.getRenderer();
+      if (r.getValueProviders().size() > 0) {
+        if (r.getValueProviders().containsKey("name")) {
+          value = r.getValueProviders().get("name").apply(item);
+        } else {
+          value = r.getValueProviders().values().iterator().next().apply(item);
         }
-      } else if (renderer instanceof BasicRenderer) {
+      } else if (r instanceof BasicRenderer) {
         try {
           Method getValueProviderMethod = BasicRenderer.class.getDeclaredMethod("getValueProvider");
           getValueProviderMethod.setAccessible(true);
           @SuppressWarnings("unchecked")
-          ValueProvider<T, ?> vp = (ValueProvider<T, ?>) getValueProviderMethod.invoke(renderer);
+          ValueProvider<T, ?> vp = (ValueProvider<T, ?>) getValueProviderMethod.invoke(r);
           value = vp.apply(item);
         } catch (NoSuchMethodException
             | SecurityException
