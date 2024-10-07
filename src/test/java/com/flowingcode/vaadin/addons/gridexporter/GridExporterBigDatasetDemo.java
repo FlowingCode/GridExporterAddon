@@ -87,24 +87,20 @@ public class GridExporterBigDatasetDemo extends Div {
     // #if vaadin eq 0
     GridHelper.setHeightByRows(grid, 6);
     GridHelper.setHeightMode(grid, HeightMode.ROW);
-    Html block1 = new Html(
-        """
-            <div>
-            This configuration prepares the exporter for the BigDataset demo, enabling it to manage resource-intensive
-            document generation tasks effectively. In this setup, an upper limit of 10 is established for the cost of
-            concurrent downloads, and the big dataset exporter is configured with a cost of 9, while other exporters
-            handling smaller datasets retain the default cost of 1. This customization allows a combination of one large
-            dataset download alongside one small dataset download, or up to 10 concurrent downloads of smaller datasets
-            when no big dataset is being exported.
-            </div>""");
-    Html block2 = new Html(
-        """
-            <div>
-            Additionally, <code>setConcurrentDownloadTimeout</code> enforces a timeout for acquiring the necessary permits
-            during a download operation. If the permits are not obtained within the specified timeframe, the download
-            request will be aborted and the <code>DownloadTimeoutEvent</code> listener will execute, preventing prolonged
-            waiting periods, especially during peak system loads.
-            </div>""");
+    Html block1 = new Html("<div>"
+        + "This configuration prepares the exporter for the BigDataset demo, enabling it to manage resource-intensive "
+        + "document generation tasks effectively. In this setup, an upper limit of 10 is established for the cost of "
+        + "concurrent downloads, and the big dataset exporter is configured with a cost of 9, while other exporters "
+        + "handling smaller datasets retain the default cost of 1. This customization allows a combination of one large "
+        + "dataset download alongside one small dataset download, or up to 10 concurrent downloads of smaller datasets "
+        + "when no big dataset is being exported." + "</div>");
+
+    Html block2 = new Html("<div>"
+        + "Additionally, <code>setConcurrentDownloadTimeout</code> enforces a timeout for acquiring the necessary permits "
+        + "during a download operation. If the permits are not obtained within the specified timeframe, the download "
+        + "request will be aborted and the <code>DownloadTimeoutEvent</code> listener will execute, preventing prolonged "
+        + "waiting periods, especially during peak system loads." + "</div>");
+
 
     add(block1, grid, block2);
     SourceCodeViewer.highlightOnHover(block1, "concurrent");
