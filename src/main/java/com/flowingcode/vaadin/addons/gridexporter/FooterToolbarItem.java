@@ -35,7 +35,7 @@ public class FooterToolbarItem implements Serializable {
 
   public FooterToolbarItem(Component component) {
     this.component = component;
-    this.position = FooterToolbarItemPosition.AFTER_EXPORT_BUTTONS;
+    position = FooterToolbarItemPosition.AFTER_EXPORT_BUTTONS;
   }
 
   public FooterToolbarItem(Component component, FooterToolbarItemPosition position) {

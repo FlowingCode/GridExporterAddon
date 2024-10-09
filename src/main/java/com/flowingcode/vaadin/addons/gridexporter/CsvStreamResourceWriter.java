@@ -21,8 +21,7 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.opencsv.CSVWriter;
-import com.vaadin.flow.data.binder.BeanPropertySet;
-import com.vaadin.flow.data.binder.PropertySet;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.server.VaadinSession;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -30,7 +29,6 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -57,16 +55,17 @@ class CsvStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
 
     session.lock();
     try {
+      Grid<T> grid = exporter.getGrid();
       exporter.setColumns(
-          exporter.grid.getColumns().stream()
+          grid.getColumns().stream()
           .filter(this::isExportable)
           .collect(Collectors.toList()));
 
-      headers = getGridHeaders(exporter.grid).stream().map(Pair::getLeft).toArray(String[]::new);
-      data = obtainDataStream(exporter.grid.getDataProvider())
+      headers = getGridHeaders(grid).stream().map(Pair::getLeft).toArray(String[]::new);
+      data = obtainDataStream(grid.getDataProvider())
           .map(this::buildRow)
           .collect(Collectors.toList());
-      footers = getGridFooters(exporter.grid).stream()
+      footers = getGridFooters(grid).stream()
           .filter(pair -> StringUtils.isNotBlank(pair.getKey()))
           .map(Pair::getLeft)
           .toArray(String[]::new);
@@ -90,12 +89,11 @@ class CsvStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     }
   }
 
-  @SuppressWarnings("unchecked")
   private String[] buildRow(T item) {
-    if (exporter.propertySet == null) {
-      exporter.propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
+
+    if (exporter.getColumns().isEmpty()) {
+      throw new IllegalStateException("Grid has no columns");
     }
-    if (exporter.getColumns().isEmpty()) throw new IllegalStateException("Grid has no columns");
 
     String[] result = new String[exporter.getColumns().size()];
     int[] currentColumn = new int[1];

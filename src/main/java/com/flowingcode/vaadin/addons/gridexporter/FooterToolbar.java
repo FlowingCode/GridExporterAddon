@@ -28,7 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * 
+ *
  * Footer toolbar for export grid.
  *
  */
@@ -52,7 +52,7 @@ class FooterToolbar extends Composite<HorizontalLayout> {
 
   /**
    * Checks if any {@link FooterToolbarItem} has been added.
-   * 
+   *
    * @return true if has {@link FooterToolbarItem} added.
    */
   public boolean hasItems() {
@@ -65,7 +65,7 @@ class FooterToolbar extends Composite<HorizontalLayout> {
     super.onAttach(attachEvent);
 
     items.stream().sorted(Comparator.comparing(FooterToolbarItem::getPosition))
-        .map(FooterToolbarItem::getComponent).forEach(this.getContent()::add);
+        .map(FooterToolbarItem::getComponent).forEach(getContent()::add);
   }
 
 }

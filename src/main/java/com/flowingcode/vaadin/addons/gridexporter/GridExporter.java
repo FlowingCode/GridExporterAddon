@@ -30,6 +30,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
+import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertyDefinition;
 import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.renderer.BasicRenderer;
@@ -59,6 +60,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +102,8 @@ public class GridExporter<T> implements Serializable {
   static final String COLUMN_FOOTER = "column-footer";
   static final String COLUMN_POSITION = "column-position";
 
-  Grid<T> grid;
+  @Getter
+  private Grid<T> grid;
 
   String titlePlaceHolder = "${title}";
   String headersPlaceHolder = "${headers}";
@@ -108,7 +111,7 @@ public class GridExporter<T> implements Serializable {
   String footersPlaceHolder = "${footers}";
 
   List<Grid.Column<T>> columns;
-  PropertySet<T> propertySet;
+  private PropertySet<T> propertySet;
 
   Map<String, String> additionalPlaceHolders = new HashMap<>();
 
@@ -224,6 +227,9 @@ public class GridExporter<T> implements Serializable {
 
     // if there is a key, assume that the property can be retrieved from it
     if (value == null && column.getKey() != null) {
+      if (propertySet == null) {
+        propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
+      }
       Optional<PropertyDefinition<T, ?>> propertyDefinition =
           propertySet.getProperty(column.getKey());
       if (propertyDefinition.isPresent()) {

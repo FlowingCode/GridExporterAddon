@@ -20,6 +20,13 @@
 /** */
 package com.flowingcode.vaadin.addons.gridexporter;
 
+import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.data.provider.DataProvider;
+import com.vaadin.flow.function.ValueProvider;
+import com.vaadin.flow.server.VaadinSession;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -52,14 +59,6 @@ import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.vaadin.flow.component.ComponentUtil;
-import com.vaadin.flow.component.grid.ColumnTextAlign;
-import com.vaadin.flow.component.grid.Grid.Column;
-import com.vaadin.flow.data.binder.BeanPropertySet;
-import com.vaadin.flow.data.binder.PropertySet;
-import com.vaadin.flow.data.provider.DataProvider;
-import com.vaadin.flow.function.ValueProvider;
-import com.vaadin.flow.server.VaadinSession;
 /**
  * @author mlopez
  */
@@ -70,7 +69,7 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
   private static final String DEFAULT_TEMPLATE = "/template.xlsx";
   private static final String COLUMN_CELLSTYLE_MAP = "colum-cellstyle-map";
   private static enum ExcelCellType {HEADER,CELL,FOOTER};
-  
+
   public ExcelStreamResourceWriter(GridExporter<T> exporter, String template) {
     super(exporter, template, DEFAULT_TEMPLATE);
   }
@@ -83,7 +82,8 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
   private Workbook createWorkbook(VaadinSession session) {
     session.lock();
     try {
-      exporter.setColumns(exporter.grid.getColumns().stream().filter(this::isExportable)
+      Grid<T> grid = exporter.getGrid();
+      exporter.setColumns(grid.getColumns().stream().filter(this::isExportable)
           .peek(col -> ComponentUtil.setData(col, COLUMN_CELLSTYLE_MAP, null))
           .collect(Collectors.toList()));
       Workbook wb = getBaseTemplateWorkbook();
@@ -95,7 +95,7 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
       }
 
       Cell cell = findCellWithPlaceHolder(sheet, exporter.headersPlaceHolder);
-      List<Pair<String, Column<T>>> headers = getGridHeaders(exporter.grid);
+      List<Pair<String, Column<T>>> headers = getGridHeaders(grid);
 
       fillHeaderOrFooter(sheet, cell, headers, true);
       if (exporter.autoMergeTitle && titleCell != null && exporter.getColumns().size()>1) {
@@ -114,7 +114,7 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
       Sheet tempSheet = wb.cloneSheet(exporter.sheetNumber);
 
       int lastRow =
-          fillData(sheet, cell, exporter.grid.getDataProvider(), dataRange, titleCell != null);
+          fillData(sheet, cell, grid.getDataProvider(), dataRange, titleCell != null);
 
       applyConditionalFormattings(sheet, dataRange);
 
@@ -123,7 +123,7 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
       wb.removeSheetAt(exporter.sheetNumber + 1);
 
       cell = findCellWithPlaceHolder(sheet, exporter.footersPlaceHolder);
-      List<Pair<String, Column<T>>> footers = getGridFooters(exporter.grid);
+      List<Pair<String, Column<T>>> footers = getGridFooters(grid);
       if (cell != null) {
         fillHeaderOrFooter(sheet, cell, footers, false);
       }
@@ -235,12 +235,11 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     return dataRange.getLastRow();
   }
 
-  @SuppressWarnings("unchecked")
   private void buildRow(T item, Sheet sheet, Cell startingCell) {
-    if (exporter.propertySet == null) {
-      exporter.propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
+
+    if (exporter.getColumns().isEmpty()) {
+      throw new IllegalStateException("Grid has no columns");
     }
-    if (exporter.getColumns().isEmpty()) throw new IllegalStateException("Grid has no columns");
 
     int[] currentColumn = new int[1];
     currentColumn[0] = startingCell.getColumnIndex();
