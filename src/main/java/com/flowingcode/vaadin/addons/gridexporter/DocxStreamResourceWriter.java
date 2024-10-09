@@ -17,7 +17,6 @@
  * limitations under the License.
  * #L%
  */
-/** */
 package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.vaadin.flow.component.grid.ColumnTextAlign;

@@ -17,7 +17,6 @@
  * limitations under the License.
  * #L%
  */
-/** */
 package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.vaadin.flow.server.VaadinSession;
@@ -52,10 +51,10 @@ class PdfStreamResourceWriter<T> extends DocxStreamResourceWriter<T> {
       createDoc(session).write(baos);
 
       WordprocessingMLPackage wordMLPackage =
-                        WordprocessingMLPackage.load(new ByteArrayInputStream(baos.toByteArray()));
-                    MainDocumentPart documentPart = wordMLPackage.getMainDocumentPart();
+          WordprocessingMLPackage.load(new ByteArrayInputStream(baos.toByteArray()));
+      MainDocumentPart documentPart = wordMLPackage.getMainDocumentPart();
 
-                    Docx4J.toPDF(wordMLPackage, out);
+      Docx4J.toPDF(wordMLPackage, out);
     } catch (Docx4JException e) {
       throw new RuntimeException("Problem when exporting data to PDF file", e);
     }

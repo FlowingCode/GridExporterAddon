@@ -20,6 +20,13 @@
 /** */
 package com.flowingcode.vaadin.addons.gridexporter;
 
+import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.data.provider.DataProvider;
+import com.vaadin.flow.function.ValueProvider;
+import com.vaadin.flow.server.VaadinSession;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -52,13 +59,6 @@ import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.vaadin.flow.component.ComponentUtil;
-import com.vaadin.flow.component.grid.ColumnTextAlign;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.Grid.Column;
-import com.vaadin.flow.data.provider.DataProvider;
-import com.vaadin.flow.function.ValueProvider;
-import com.vaadin.flow.server.VaadinSession;
 /**
  * @author mlopez
  */
@@ -69,7 +69,7 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
   private static final String DEFAULT_TEMPLATE = "/template.xlsx";
   private static final String COLUMN_CELLSTYLE_MAP = "colum-cellstyle-map";
   private static enum ExcelCellType {HEADER,CELL,FOOTER};
-  
+
   public ExcelStreamResourceWriter(GridExporter<T> exporter, String template) {
     super(exporter, template, DEFAULT_TEMPLATE);
   }
