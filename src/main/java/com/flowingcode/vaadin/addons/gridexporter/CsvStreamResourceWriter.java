@@ -29,7 +29,6 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -92,7 +91,9 @@ class CsvStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
 
   private String[] buildRow(T item) {
 
-    if (exporter.getColumns().isEmpty()) throw new IllegalStateException("Grid has no columns");
+    if (exporter.getColumns().isEmpty()) {
+      throw new IllegalStateException("Grid has no columns");
+    }
 
     String[] result = new String[exporter.getColumns().size()];
     int[] currentColumn = new int[1];
