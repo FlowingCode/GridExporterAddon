@@ -21,6 +21,7 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.vaadin.flow.component.grid.ColumnTextAlign;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
@@ -80,8 +81,9 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
   }
 
   private XWPFDocument createDoc() throws IOException {
+    Grid<T> grid = exporter.getGrid();
     exporter.setColumns(
-        exporter.grid.getColumns().stream()
+        grid.getColumns().stream()
             .filter(this::isExportable)
             .collect(Collectors.toList()));
 
@@ -129,17 +131,17 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
                   cctblgridcol, "" + Math.round(9638 / exporter.getColumns().size()));
             });
 
-    List<Pair<String, Column<T>>> headers = getGridHeaders(exporter.grid);
+    List<Pair<String, Column<T>>> headers = getGridHeaders(grid);
     XWPFTableCell cell = findCellWithPlaceHolder(table, exporter.headersPlaceHolder);
     if (cell != null) {
       fillHeaderOrFooter(table, cell, headers, true, exporter.headersPlaceHolder);
     }
 
     cell = findCellWithPlaceHolder(table, exporter.dataPlaceHolder);
-    fillData(table, cell, exporter.grid.getDataProvider());
+    fillData(table, cell, grid.getDataProvider());
 
     cell = findCellWithPlaceHolder(table, exporter.footersPlaceHolder);
-    List<Pair<String, Column<T>>> footers = getGridFooters(exporter.grid);
+    List<Pair<String, Column<T>>> footers = getGridFooters(grid);
     if (cell != null) {
       fillHeaderOrFooter(table, cell, footers, false, exporter.footersPlaceHolder);
     }
@@ -188,7 +190,9 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     if (exporter.propertySet == null) {
       exporter.propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
     }
-    if (exporter.getColumns().isEmpty()) throw new IllegalStateException("Grid has no columns");
+    if (exporter.getColumns().isEmpty()) {
+      throw new IllegalStateException("Grid has no columns");
+    }
 
     int[] currentColumn = new int[1];
     currentColumn[0] = row.getTableCells().indexOf(startingCell);
@@ -200,7 +204,9 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
               XWPFTableCell currentCell = startingCell;
               if (row.getTableCells().indexOf(startingCell) < currentColumn[0]) {
                 currentCell = startingCell.getTableRow().getCell(currentColumn[0]);
-                if (currentCell == null) currentCell = startingCell.getTableRow().createCell();
+                if (currentCell == null) {
+                  currentCell = startingCell.getTableRow().createCell();
+                }
               }
               PoiHelper.setWidth(currentCell, "" + Math.round(9638 / exporter.getColumns().size()));
               currentCell.getCTTc().setTcPr(tcpr);
@@ -226,12 +232,12 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     if (value == null) {
       setCellValue("", cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
     } else if (value instanceof Boolean) {
-      setCellValue("" + (Boolean) value, cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
+      setCellValue("" + value, cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
     } else if (value instanceof Calendar) {
       Calendar calendar = (Calendar) value;
       setCellValue("" + calendar.getTime(), cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
     } else if (value instanceof Double) {
-      setCellValue("" + (Double) value, cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
+      setCellValue("" + value, cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
     } else {
       setCellValue("" + value.toString(), cell, exporter.dataPlaceHolder, ctpPr, ctrPr);
     }
@@ -350,9 +356,12 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
                   .forEach(
                       row -> {
                         XWPFTableCell cell = row.getCell(0);
-                        if (cell.getText().equals(exporter.headersPlaceHolder))
+                        if (cell.getText().equals(exporter.headersPlaceHolder)) {
                           foundHeaders[0] = true;
-                        if (cell.getText().equals(exporter.dataPlaceHolder)) foundData[0] = true;
+                        }
+                        if (cell.getText().equals(exporter.dataPlaceHolder)) {
+                          foundData[0] = true;
+                        }
                       });
               if (foundHeaders[0] && foundData[0]) {
                 result[0] = table;

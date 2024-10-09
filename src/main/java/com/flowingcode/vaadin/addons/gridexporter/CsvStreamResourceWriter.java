@@ -21,6 +21,7 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.opencsv.CSVWriter;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.server.VaadinSession;
@@ -57,16 +58,17 @@ class CsvStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
 
     session.lock();
     try {
+      Grid<T> grid = exporter.getGrid();
       exporter.setColumns(
-          exporter.grid.getColumns().stream()
+          grid.getColumns().stream()
           .filter(this::isExportable)
           .collect(Collectors.toList()));
 
-      headers = getGridHeaders(exporter.grid).stream().map(Pair::getLeft).toArray(String[]::new);
-      data = obtainDataStream(exporter.grid.getDataProvider())
+      headers = getGridHeaders(grid).stream().map(Pair::getLeft).toArray(String[]::new);
+      data = obtainDataStream(grid.getDataProvider())
           .map(this::buildRow)
           .collect(Collectors.toList());
-      footers = getGridFooters(exporter.grid).stream()
+      footers = getGridFooters(grid).stream()
           .filter(pair -> StringUtils.isNotBlank(pair.getKey()))
           .map(Pair::getLeft)
           .toArray(String[]::new);

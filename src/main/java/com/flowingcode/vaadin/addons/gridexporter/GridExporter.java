@@ -59,6 +59,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +101,8 @@ public class GridExporter<T> implements Serializable {
   static final String COLUMN_FOOTER = "column-footer";
   static final String COLUMN_POSITION = "column-position";
 
-  Grid<T> grid;
+  @Getter
+  private Grid<T> grid;
 
   String titlePlaceHolder = "${title}";
   String headersPlaceHolder = "${headers}";

@@ -82,12 +82,12 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   protected Stream<T> getDataStream(Query newQuery) {
-    Stream<T> stream = exporter.grid.getDataProvider().fetch(newQuery);
+    Stream<T> stream = exporter.getGrid().getDataProvider().fetch(newQuery);
     if (stream.isParallel()) {
       LoggerFactory.getLogger(DataCommunicator.class)
           .debug(
               "Data provider {} has returned " + "parallel stream on 'fetch' call",
-              exporter.grid.getDataProvider().getClass());
+              exporter.getGrid().getDataProvider().getClass());
       stream = stream.collect(Collectors.toList()).stream();
       assert !stream.isParallel();
     }
@@ -142,11 +142,13 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
   }
 
   protected Stream<T> obtainDataStream(DataProvider<T, ?> dataProvider) {
+    Grid<T> grid = exporter.getGrid();
+
     Object filter = null;
     try {
       Method method = DataCommunicator.class.getDeclaredMethod("getFilter");
       method.setAccessible(true);
-      filter = method.invoke(exporter.grid.getDataCommunicator());
+      filter = method.invoke(grid.getDataCommunicator());
     } catch (Exception e) {
       LOGGER.error("Unable to get filter from DataCommunicator", e);
     }
@@ -154,19 +156,19 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
     Stream<T> dataStream;
 
     // special handling for hierarchical data provider
-    if (exporter.grid.getDataProvider() instanceof HierarchicalDataProvider) {
-      return obtainFlattenedHierarchicalDataStream(exporter.grid);
+    if (grid.getDataProvider() instanceof HierarchicalDataProvider) {
+      return obtainFlattenedHierarchicalDataStream(grid);
     } else if (dataProvider instanceof AbstractBackEndDataProvider) {
-      GridLazyDataView<T> gridLazyDataView = exporter.grid.getLazyDataView();
+      GridLazyDataView<T> gridLazyDataView = grid.getLazyDataView();
       dataStream = gridLazyDataView.getItems();
     } else {
       @SuppressWarnings({"rawtypes", "unchecked"})
       Query<T, ?> streamQuery =
           new Query<>(
               0,
-              exporter.grid.getDataProvider().size(new Query(filter)),
-              exporter.grid.getDataCommunicator().getBackEndSorting(),
-              exporter.grid.getDataCommunicator().getInMemorySorting(),
+              grid.getDataProvider().size(new Query(filter)),
+              grid.getDataCommunicator().getBackEndSorting(),
+              grid.getDataCommunicator().getInMemorySorting(),
               filter);
       dataStream = getDataStream(streamQuery);
     }
