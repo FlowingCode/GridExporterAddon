@@ -23,8 +23,6 @@ package com.flowingcode.vaadin.addons.gridexporter;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
-import com.vaadin.flow.data.binder.BeanPropertySet;
-import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.server.VaadinSession;
 import java.io.IOException;
@@ -180,16 +178,13 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
         });
   }
 
-  @SuppressWarnings("unchecked")
   private void buildRow(
       T item,
       XWPFTableRow row,
       XWPFTableCell startingCell,
       CTTcPr tcpr,
       XWPFTableCell templateCell) {
-    if (exporter.propertySet == null) {
-      exporter.propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
-    }
+
     if (exporter.getColumns().isEmpty()) {
       throw new IllegalStateException("Grid has no columns");
     }
