@@ -56,8 +56,6 @@ import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
-import com.vaadin.flow.data.binder.BeanPropertySet;
-import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.server.VaadinSession;
@@ -237,11 +235,8 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     return dataRange.getLastRow();
   }
 
-  @SuppressWarnings("unchecked")
   private void buildRow(T item, Sheet sheet, Cell startingCell) {
-    if (exporter.propertySet == null) {
-      exporter.propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
-    }
+
     if (exporter.getColumns().isEmpty()) {
       throw new IllegalStateException("Grid has no columns");
     }
