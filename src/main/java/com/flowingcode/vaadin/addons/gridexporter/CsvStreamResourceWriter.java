@@ -22,8 +22,6 @@ package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.opencsv.CSVWriter;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.data.binder.BeanPropertySet;
-import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.server.VaadinSession;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -92,11 +90,8 @@ class CsvStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     }
   }
 
-  @SuppressWarnings("unchecked")
   private String[] buildRow(T item) {
-    if (exporter.propertySet == null) {
-      exporter.propertySet = (PropertySet<T>) BeanPropertySet.get(item.getClass());
-    }
+
     if (exporter.getColumns().isEmpty()) throw new IllegalStateException("Grid has no columns");
 
     String[] result = new String[exporter.getColumns().size()];
