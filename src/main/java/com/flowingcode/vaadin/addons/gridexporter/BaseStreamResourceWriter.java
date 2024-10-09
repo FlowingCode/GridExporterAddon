@@ -183,7 +183,9 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
   private ArrayList<T> fetchDataRecursive(final Grid<T> grid, T parent) {
     ArrayList<T> result = new ArrayList<>();
 
-    if (parent != null) result.add(parent);
+    if (parent != null) {
+      result.add(parent);
+    }
 
     HierarchicalDataProvider<T, ?> hDataProvider =
         (HierarchicalDataProvider<T, ?>) grid.getDataProvider();
