@@ -128,7 +128,10 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
                   cctblgridcol, "" + Math.round(9638 / exporter.getColumns().size()));
             });
 
-    List<Pair<String, Column<T>>> headers = getGridHeaders(grid);
+    List<Pair<String, Column<T>>> headers = getGridHeaders(grid).stream()
+        .map(pair -> 
+        Pair.of(pair.getLeft().get(0), pair.getRight())
+        ).collect(Collectors.toList());
     XWPFTableCell cell = findCellWithPlaceHolder(table, exporter.headersPlaceHolder);
     if (cell != null) {
       fillHeaderOrFooter(table, cell, headers, true, exporter.headersPlaceHolder);
