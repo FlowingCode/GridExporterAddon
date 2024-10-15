@@ -61,7 +61,7 @@
             <dependency>
             	<groupId>com.flowingcode.vaadin.addons.demo</groupId>
             	<artifactId>commons-demo</artifactId>
-            	<version>4.1.0</version>
+            	<version>3.6.0</version>
             </dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -209,8 +209,7 @@
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
 			<version>3.1.0</version>
-			<type>jar</type>
-			<scope>test</scope>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.github.bonigarcia</groupId>

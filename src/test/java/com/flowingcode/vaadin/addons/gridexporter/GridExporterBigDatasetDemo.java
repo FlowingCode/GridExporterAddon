@@ -20,7 +20,6 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.flowingcode.vaadin.addons.demo.DemoSource;
-import com.flowingcode.vaadin.addons.demo.SourceCodeViewer;
 import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
 import com.flowingcode.vaadin.addons.gridhelpers.HeightMode;
 import com.github.javafaker.Faker;
@@ -40,7 +39,6 @@ import java.util.stream.IntStream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
-@DemoSource(clazz = VaadinServiceInitListenerImpl.class)
 @PageTitle("Big Dataset")
 @Route(value = "gridexporter/bigdataset", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
@@ -103,9 +101,6 @@ public class GridExporterBigDatasetDemo extends Div {
 
 
     add(block1, grid, block2);
-    SourceCodeViewer.highlightOnHover(block1, "concurrent");
-    SourceCodeViewer.highlightOnHover(block2,
-        "VaadinServiceInitListenerImpl.java#setConcurrentDownloadTimeout");
     // #endif
     // begin-block concurrent
     exporter.setConcurrentDownloadCost(9);
