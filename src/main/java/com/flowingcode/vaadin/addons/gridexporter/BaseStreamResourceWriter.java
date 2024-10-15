@@ -23,6 +23,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.dataview.GridLazyDataView;
 import com.vaadin.flow.data.provider.AbstractBackEndDataProvider;
 import com.vaadin.flow.data.provider.DataCommunicator;
@@ -30,11 +31,11 @@ import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.data.provider.hierarchy.HierarchicalDataProvider;
 import com.vaadin.flow.data.provider.hierarchy.HierarchicalQuery;
+import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.server.StreamResourceWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -94,13 +95,29 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
     return stream;
   }
 
-  protected List<Pair<String, Column<T>>> getGridHeaders(Grid<T> grid) {
+  protected List<Pair<List<String>, Column<T>>> getGridHeaders(Grid<T> grid) {
     return exporter.getColumnsOrdered().stream()
-        .map(
-            column ->
-                ImmutablePair.of(
-                    renderCellTextContent(grid, column, GridExporter.COLUMN_HEADER), column))
+        .map(column -> ImmutablePair.of(getHeaderTexts(grid, column), column))
         .collect(Collectors.toList());
+  }
+  
+  private List<String> getHeaderTexts(Grid<T> grid, Column<T> column) {
+      List<String> headerTexts = new ArrayList<>();
+      List<HeaderRow> headerRows = grid.getHeaderRows();
+      for (HeaderRow headerRow : headerRows) {
+          String headerText = renderCellTextContent(grid, column, GridExporter.COLUMN_HEADER, (col) -> {
+            String value = headerRow.getCell(col).getText();
+            if (Strings.isBlank(value)) {
+              Component component = headerRow.getCell(col).getComponent();
+              if (component != null) {
+                value = component.getElement().getTextRecursively();
+              }
+            }
+            return value;
+          });
+          headerTexts.add(headerText);
+      }
+      return headerTexts;
   }
 
   protected List<Pair<String, Column<T>>> getGridFooters(Grid<T> grid) {
@@ -108,14 +125,16 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
         .map(
             column ->
                 ImmutablePair.of(
-                    renderCellTextContent(grid, column, GridExporter.COLUMN_FOOTER), column))
+                    renderCellTextContent(grid, column, GridExporter.COLUMN_FOOTER, null),column
+                    )
+            )
         .collect(Collectors.toList());
   }
 
-  private String renderCellTextContent(Grid<T> grid, Column<T> column, String columnType) {
+  private String renderCellTextContent(Grid<T> grid, Column<T> column, String columnType, SerializableFunction<Column<T>,String> obtainCellFunction) {
     String headerOrFooter = (String) ComponentUtil.getData(column, columnType);
     if (Strings.isBlank(headerOrFooter)) {
-      Function<Column<?>, Component> getHeaderOrFooterComponent;
+      SerializableFunction<Column<?>, Component> getHeaderOrFooterComponent;
       if (GridExporter.COLUMN_HEADER.equals(columnType)) {
         getHeaderOrFooterComponent = Column::getHeaderComponent;
         headerOrFooter = column.getHeaderText();
@@ -127,9 +146,14 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
       }
       if (Strings.isBlank(headerOrFooter)) {
         try {
-          Component component = getHeaderOrFooterComponent.apply(column);
-          if (component != null) {
-            headerOrFooter = component.getElement().getTextRecursively();
+          Component component;
+          if (obtainCellFunction!=null) {
+            headerOrFooter = obtainCellFunction.apply(column);
+          } else {
+            component = getHeaderOrFooterComponent.apply(column);
+            if (component != null) {
+              headerOrFooter = component.getElement().getTextRecursively();
+            }
           }
         } catch (RuntimeException e) {
           throw new IllegalStateException(
