@@ -2,7 +2,7 @@
  * #%L
  * Grid Exporter Add-on
  * %%
- * Copyright (C) 2022 - 2023 Flowing Code
+ * Copyright (C) 2022 - 2024 Flowing Code
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@
  */
 package com.flowingcode.vaadin.addons.gridexporter;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
-public class Person {
+@SuppressWarnings("serial")
+public class Person implements Serializable {
 
   private String name;
   private String lastName;

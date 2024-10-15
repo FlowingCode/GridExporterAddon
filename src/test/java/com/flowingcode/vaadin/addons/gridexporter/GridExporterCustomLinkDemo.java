@@ -2,7 +2,7 @@
  * #%L
  * Grid Exporter Add-on
  * %%
- * Copyright (C) 2022 - 2023 Flowing Code
+ * Copyright (C) 2022 - 2024 Flowing Code
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,12 @@ import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
-@PageTitle("Grid Exporter Addon Custom Link Demo")
+@PageTitle("Custom Link")
 @Route(value = "gridexporter/custom-link", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
 public class GridExporterCustomLinkDemo extends Div {
+
+  private static final Faker faker = FakerInstance.get();
 
   public GridExporterCustomLinkDemo() throws EncryptedDocumentException, IOException {
     Grid<Person> grid = new Grid<>(Person.class);
@@ -55,7 +57,6 @@ public class GridExporterCustomLinkDemo extends Div {
             .asLongStream()
             .mapToObj(
                 number -> {
-                  Faker faker = new Faker();
                   Double budget = faker.number().randomDouble(2, 10000, 100000);
                   total[0] = total[0].add(BigDecimal.valueOf(budget));
                   c.setFooter("$" + total[0]);
@@ -70,6 +71,7 @@ public class GridExporterCustomLinkDemo extends Div {
     this.setSizeFull();
     GridExporter<Person> exporter = GridExporter.createFor(grid);
     exporter.setAutoAttachExportButtons(false);
+    exporter.setAutoSizeColumns(false);
     exporter.setTitle("People information");
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));

@@ -2,7 +2,7 @@
  * #%L
  * Grid Exporter Add-on
  * %%
- * Copyright (C) 2022 - 2023 Flowing Code
+ * Copyright (C) 2022 - 2024 Flowing Code
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,10 +39,12 @@ import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
-@PageTitle("Grid Exporter Hierarchical Data Demo")
+@PageTitle("Hierarchical Data")
 @Route(value = "gridexporter/hierarchical", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
 public class GridExporterHierarchicalDataDemo extends Div {
+
+  private static final Faker faker = FakerInstance.get();
 
   private Map<Integer, PersonTreeEntry> ageToTreeEntryMap = new HashMap<>();
   private List<PersonTreeEntry> people;
@@ -74,7 +76,6 @@ public class GridExporterHierarchicalDataDemo extends Div {
             .asLongStream()
             .mapToObj(
                 number -> {
-                  Faker faker = new Faker();
                   Double budget = faker.number().randomDouble(2, 10000, 100000);
                   total[0] = total[0].add(BigDecimal.valueOf(budget));
                   budgetCol.setFooter("$" + total[0]);
@@ -108,6 +109,7 @@ public class GridExporterHierarchicalDataDemo extends Div {
     exporter.setTitle("People information grouped by age");
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
+    exporter.setAutoSizeColumns(false);
     add(grid);
   }
 }

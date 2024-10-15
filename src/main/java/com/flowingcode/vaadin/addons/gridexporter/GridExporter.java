@@ -2,7 +2,7 @@
  * #%L
  * Grid Exporter Add-on
  * %%
- * Copyright (C) 2022 - 2023 Flowing Code
+ * Copyright (C) 2022 - 2024 Flowing Code
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,44 +21,72 @@ package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.flowingcode.vaadin.addons.fontawesome.FontAwesome;
 import com.flowingcode.vaadin.addons.gridhelpers.GridHelper;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.HasEnabled;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.grid.ColumnPathRenderer;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.binder.PropertyDefinition;
 import com.vaadin.flow.data.binder.PropertySet;
 import com.vaadin.flow.data.renderer.BasicRenderer;
 import com.vaadin.flow.data.renderer.LitRenderer;
 import com.vaadin.flow.data.renderer.Renderer;
+import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.StreamResourceWriter;
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.shared.Registration;
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("serial")
 public class GridExporter<T> implements Serializable {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ExcelInputStreamFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GridExporter.class);
 
   private boolean excelExportEnabled = true;
   private boolean docxExportEnabled = true;
   private boolean pdfExportEnabled = true;
   private boolean csvExportEnabled = true;
   private boolean autoSizeColumns = true;
+
+  /** Represents all the permits available to the semaphore. */
+  public static final float MAX_COST = ConcurrentStreamResourceWriter.MAX_COST;
+
+  /** A fractional cost that acquires only one permit. */
+  public static final float MIN_COST = ConcurrentStreamResourceWriter.MIN_COST;
+
+  /** The standard unit of resource usage for concurrent downloads. */
+  public static final float DEFAULT_COST = 1.0f;
+
+  private boolean disableOnClick;
+
+  private float concurrentDownloadCost = DEFAULT_COST;
+  private final List<SerializableConsumer<ConcurrentDownloadTimeoutEvent>> instanceDownloadTimeoutListeners =
+      new CopyOnWriteArrayList<>();
 
   static final String COLUMN_VALUE_PROVIDER_DATA = "column-value-provider-data";
   static final String COLUMN_EXPORTED_PROVIDER_DATA = "column-value-exported-data";
@@ -86,7 +114,7 @@ public class GridExporter<T> implements Serializable {
 
   String title = "Grid Export";
 
-  String fileName = "export";
+  private SerializableSupplier<String> fileNameSupplier = () -> "export";
 
   int sheetNumber = 0;
 
@@ -96,9 +124,15 @@ public class GridExporter<T> implements Serializable {
 
   SerializableSupplier<String> nullValueSupplier;
 
+  /** @deprecated. This attribute is incremented only when exporting DOCX, but it's never reset. */
+  @Deprecated(since = "2.5.0", forRemoval = true)
   public int totalcells = 0;
 
   private ButtonsAlignment buttonsAlignment = ButtonsAlignment.RIGHT;
+
+  private List<FooterToolbarItem> footerToolbarItems;
+
+  private SerializableSupplier<Charset> csvCharset;
 
   private GridExporter(Grid<T> grid) {
     this.grid = grid;
@@ -114,37 +148,50 @@ public class GridExporter<T> implements Serializable {
     grid.getElement()
         .addAttachListener(
             ev -> {
+              FooterToolbar footerToolbar = new FooterToolbar();
+
               if (exporter.autoAttachExportButtons) {
-                HorizontalLayout hl = new HorizontalLayout();
                 if (exporter.isExcelExportEnabled()) {
                   Anchor excelLink = new Anchor("", FontAwesome.Regular.FILE_EXCEL.create());
-                  excelLink.setHref(exporter.getExcelStreamResource(excelCustomTemplate));
+                  excelLink
+                      .setHref(exporter.getExcelStreamResource(excelCustomTemplate)
+                          .forComponent(excelLink));
                   excelLink.getElement().setAttribute("download", true);
-                  hl.add(excelLink);
+                  footerToolbar.add(
+                      new FooterToolbarItem(excelLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
                 if (exporter.isDocxExportEnabled()) {
                   Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_WORD.create());
-                  docLink.setHref(exporter.getDocxStreamResource(docxCustomTemplate));
+                  docLink.setHref(
+                      exporter.getDocxStreamResource(docxCustomTemplate).forComponent(docLink));
                   docLink.getElement().setAttribute("download", true);
-                  hl.add(docLink);
+                  footerToolbar
+                      .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
                 if (exporter.isPdfExportEnabled()) {
                   Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_PDF.create());
-                  docLink.setHref(exporter.getPdfStreamResource(docxCustomTemplate));
+                  docLink.setHref(
+                      exporter.getPdfStreamResource(docxCustomTemplate).forComponent(docLink));
                   docLink.getElement().setAttribute("download", true);
-                  hl.add(docLink);
+                  footerToolbar
+                      .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
                 if (exporter.isCsvExportEnabled()) {
                   Anchor csvLink = new Anchor("", FontAwesome.Regular.FILE_LINES.create());
                   csvLink.setHref(exporter.getCsvStreamResource());
                   csvLink.getElement().setAttribute("download", true);
-                  hl.add(csvLink);
+                  footerToolbar
+                      .add(new FooterToolbarItem(csvLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
-                hl.setSizeFull();
+              }
 
-                hl.setJustifyContentMode(exporter.getJustifyContentMode());
+              if (exporter.footerToolbarItems != null) {
+                footerToolbar.add(exporter.footerToolbarItems);
+              }
 
-                GridHelper.addToolbarFooter(grid, hl);
+              if (footerToolbar.hasItems()) {
+                footerToolbar.getContent().setJustifyContentMode(exporter.getJustifyContentMode());
+                GridHelper.addToolbarFooter(grid, footerToolbar);
               }
             });
     return exporter;
@@ -152,7 +199,7 @@ public class GridExporter<T> implements Serializable {
 
   private JustifyContentMode getJustifyContentMode() {
     JustifyContentMode justifyContentMode;
-    if (this.buttonsAlignment == ButtonsAlignment.LEFT) {
+    if (buttonsAlignment == ButtonsAlignment.LEFT) {
       justifyContentMode = JustifyContentMode.START;
     } else {
       justifyContentMode = JustifyContentMode.END;
@@ -178,7 +225,7 @@ public class GridExporter<T> implements Serializable {
     // if there is a key, assume that the property can be retrieved from it
     if (value == null && column.getKey() != null) {
       Optional<PropertyDefinition<T, ?>> propertyDefinition =
-          this.propertySet.getProperty(column.getKey());
+          propertySet.getProperty(column.getKey());
       if (propertyDefinition.isPresent()) {
         value = propertyDefinition.get().getGetter().apply(item);
       } else {
@@ -232,39 +279,200 @@ public class GridExporter<T> implements Serializable {
       if (nullValueSupplier != null) {
         value = nullValueSupplier.get();
       } else {
+        String colKey = "n/a";
+        if (column.getKey() != null) {
+          colKey = column.getKey();
+        }
         throw new IllegalStateException(
-            "It's not possible to obtain a value for column, please set a value provider by calling setExportValue()");
+            "It's not possible to obtain a value for column with key '"
+                + colKey
+                + "', please set a value provider by calling setExportValue()");
       }
     }
     return value;
   }
 
-  public StreamResource getDocxStreamResource() {
+  public GridExporterStreamResource getDocxStreamResource() {
     return getDocxStreamResource(null);
   }
 
-  public StreamResource getDocxStreamResource(String template) {
-    return new StreamResource(fileName + ".docx", new DocxInputStreamFactory<>(this, template));
+  public GridExporterStreamResource getDocxStreamResource(String template) {
+    return new GridExporterStreamResource(getFileName("docx"),
+        makeConcurrentWriter(new DocxStreamResourceWriter<>(this, template)));
   }
 
-  public StreamResource getPdfStreamResource() {
+  public GridExporterStreamResource getPdfStreamResource() {
     return getPdfStreamResource(null);
   }
 
-  public StreamResource getPdfStreamResource(String template) {
-    return new StreamResource(fileName + ".pdf", new PdfInputStreamFactory<>(this, template));
+  public GridExporterStreamResource getPdfStreamResource(String template) {
+    return new GridExporterStreamResource(getFileName("pdf"),
+        makeConcurrentWriter(new PdfStreamResourceWriter<>(this, template)));
   }
 
   public StreamResource getCsvStreamResource() {
-    return new StreamResource(fileName + ".csv", new CsvInputStreamFactory<>(this));
+    return new StreamResource(getFileName("csv"), new CsvStreamResourceWriter<>(this));
   }
 
-  public StreamResource getExcelStreamResource() {
+  public GridExporterStreamResource getExcelStreamResource() {
     return getExcelStreamResource(null);
   }
 
-  public StreamResource getExcelStreamResource(String template) {
-    return new StreamResource(fileName + ".xlsx", new ExcelInputStreamFactory<>(this, template));
+  public GridExporterStreamResource getExcelStreamResource(String template) {
+    return new GridExporterStreamResource(getFileName("xlsx"),
+        makeConcurrentWriter(new ExcelStreamResourceWriter<>(this, template)));
+  }
+
+  private GridExporterConcurrentStreamResourceWriter makeConcurrentWriter(
+      StreamResourceWriter writer) {
+    return new GridExporterConcurrentStreamResourceWriter(writer);
+  }
+
+  public class GridExporterStreamResource extends StreamResource {
+    private final GridExporterConcurrentStreamResourceWriter writer;
+
+    GridExporterStreamResource(String name, GridExporterConcurrentStreamResourceWriter writer) {
+      super(name, writer);
+      this.writer = Objects.requireNonNull(writer);
+    }
+
+    public GridExporterStreamResource forComponent(Component component) {
+      writer.button = component;
+      return this;
+    }
+  }
+
+  private class GridExporterConcurrentStreamResourceWriter extends ConcurrentStreamResourceWriter {
+
+    GridExporterConcurrentStreamResourceWriter(StreamResourceWriter delegate) {
+      super(delegate);
+    }
+
+    private Component button;
+
+      @Override
+      public float getCost(VaadinSession session) {
+        return concurrentDownloadCost;
+      }
+
+      @Override
+      public long getTimeout() {
+        // It would have been possible to specify a different timeout for each instance but I cannot
+        // figure out a good use case for that. The timeout returned herebecomes relevant when the
+        // semaphore has been acquired by any other download, so the timeout must reflect how long
+        // it is reasonable to wait for "any other download" to complete and release the semaphore.
+        //
+        // Since the reasonable timeout would depend on the duration of "any other download", it
+        // makes sense that it's a global setting instead of a per-instance setting.
+        return GridExporterConcurrentSettings.getConcurrentDownloadTimeout(TimeUnit.NANOSECONDS);
+      }
+
+      @Override
+      protected UI getUI() {
+        return grid.getUI().orElse(null);
+      }
+
+      @Override
+      protected void onTimeout() {
+        fireConcurrentDownloadTimeout();
+      }
+
+    @Override
+    protected void onAccept() {
+      if (disableOnClick) {
+        setButtonEnabled(false);
+      }
+    }
+
+    @Override
+    protected void onFinish() {
+      setButtonEnabled(true);
+  }
+
+    private void setButtonEnabled(boolean enabled) {
+      if (button instanceof HasEnabled) {
+        grid.getUI().ifPresent(ui -> ui.access(() -> ((HasEnabled) button).setEnabled(enabled)));
+      }
+    }
+  }
+
+  /**
+   * Handles the timeout event by notifying all registered listeners.
+   * <p>
+   * This method is called when a timeout occurs during a concurrent download. It creates a
+   * {@link ConcurrentDownloadTimeoutEvent} and notifies all instance and global listeners. If any
+   * listener stops the event propagation, subsequent listeners will not be notified.
+   */
+  private void fireConcurrentDownloadTimeout() {
+    var globalListeners = GridExporterConcurrentSettings.getGlobalDownloadTimeoutListeners();
+    if (!instanceDownloadTimeoutListeners.isEmpty() || !globalListeners.isEmpty()) {
+      grid.getUI().ifPresent(ui -> ui.access(() -> {
+        ConcurrentDownloadTimeoutEvent ev = new ConcurrentDownloadTimeoutEvent(GridExporter.this);
+        Stream.concat(instanceDownloadTimeoutListeners.stream(),
+            globalListeners.stream()).forEach(listener -> {
+              if (!ev.isPropagationStopped()) {
+                listener.accept(ev);
+              }
+            });
+      }));
+    }
+  }
+
+  /**
+   * Adds a listener for concurrent download timeout events specific to this instance.
+   * <p>
+   * The listener will be called whenever a concurrent download timeout event occurs.
+   *
+   * @param listener the listener to be added
+   * @return a {@link Registration} object that can be used to remove the listener
+   */
+  public Registration addConcurrentDownloadTimeoutEvent(
+      SerializableConsumer<ConcurrentDownloadTimeoutEvent> listener) {
+    instanceDownloadTimeoutListeners.add(0, listener);
+    return () -> instanceDownloadTimeoutListeners.remove(listener);
+  }
+
+  /**
+   * Configures the behavior of the system when a download is in progress.
+   * <p>
+   * When {@code disableOnClick} is set to {@code true}, the system prevents the UI from starting an
+   * additional download of the same kind while one is already in progress. Downloads from other UIs
+   * are still allowed. When set to {@code false}, concurrent downloads are permitted.
+   * </p>
+   *
+   * @param disableOnClick Whether to prevent additional downloads during an ongoing download.
+   */
+  public void setDisableOnClick(boolean disableOnClick) {
+    this.disableOnClick = disableOnClick;
+  }
+
+  /**
+   * Sets the cost for concurrent downloads. This cost is used to determine the number of permits
+   * required for downloads to proceed, thereby controlling the concurrency level. At any given
+   * time, the sum of the costs of all concurrent downloads will not exceed the limit set by
+   * {@link GridExporterConcurrentSettings#setConcurrentDownloadLimit(float)}.
+   * <p>
+   *
+   * The cost is represented as a float to allow for more granular control over resource usage. By
+   * using a floating-point number, fractional costs can be expressed, providing flexibility in
+   * determining the resource consumption for different downloads.
+   * <p>
+   *
+   * The cost is converted to a number of permits by capping it to stay within the limit. A cost of
+   * 1.0 ({@link #DEFAULT_COST}) represents a standard unit of resource usage, while a cost of 0.5
+   * represents half a unit, and a cost above 1.0 indicates higher than normal resource usage.
+   * <p>
+   *
+   * If the cost is zero or negative, no permits are needed. However, any positive cost, no matter
+   * how small, will require at least one permit to prevent downloads with very low costs from
+   * bypassing the semaphore. {@link #MIN_COST} represents the minimal fractional cost that acquires
+   * only one permit (hence {@code 2*MIN_COST} acquires two permits and so on). A cost of
+   * {@link #MAX_COST} prevents any other downloads from acquiring permits simultaneously.
+   *
+   * @param concurrentDownloadCost the cost associated with concurrent downloads for this instance.
+   */
+  public void setConcurrentDownloadCost(float concurrentDownloadCost) {
+    this.concurrentDownloadCost = concurrentDownloadCost;
   }
 
   public String getTitle() {
@@ -281,7 +489,11 @@ public class GridExporter<T> implements Serializable {
   }
 
   public String getFileName() {
-    return fileName;
+    return fileNameSupplier.get();
+  }
+
+  private String getFileName(String extension) {
+    return Objects.requireNonNull(getFileName()) + "." + extension;
   }
 
   /**
@@ -290,7 +502,19 @@ public class GridExporter<T> implements Serializable {
    * @param fileName
    */
   public void setFileName(String fileName) {
-    this.fileName = fileName;
+    Objects.requireNonNull(fileName, "File name cannot be null");
+    fileNameSupplier = () -> fileName;
+  }
+
+  /**
+   * Sets a dynamic filename for the exported file.
+   *
+   * @param fileNameSupplier a supplier that returns the name of the exported file, without
+   *        extension.
+   */
+  public void setFileName(SerializableSupplier<String> fileNameSupplier) {
+    this.fileNameSupplier =
+        Objects.requireNonNull(fileNameSupplier, "File name supplier cannot be null");
   }
 
   public boolean isAutoAttachExportButtons() {
@@ -402,7 +626,7 @@ public class GridExporter<T> implements Serializable {
    * Configure if the column is exported or not
    *
    * @param column
-   * @param export: true will be included in the exported file, false will not be included
+   * @param export true will be included in the exported file, false will not be included
    */
   public void setExportColumn(Column<T> column, boolean export) {
     ComponentUtil.setData(column, COLUMN_EXPORTED_PROVIDER_DATA, export);
@@ -434,7 +658,7 @@ public class GridExporter<T> implements Serializable {
    * value of the column so it can be converted to a Double, and then allows to specify the excel
    * format to be applied to the cell when exported to excel with a provider, so the resulting cell
    * is not a string but a number that can be used in formulas.
-   * 
+   *
    * @param column
    * @param decimalFormat
    * @param excelFormatProvider
@@ -470,7 +694,7 @@ public class GridExporter<T> implements Serializable {
    *
    * @param column
    * @param dateFormat
-   * @param excelFormat
+   * @param excelFormatProvider
    */
   public void setDateColumnFormatProvider(Column<T> column, DateFormat dateFormat,
       ValueProvider<T, String> excelFormatProvider) {
@@ -552,9 +776,7 @@ public class GridExporter<T> implements Serializable {
   }
 
   /**
-   * Get columns in the positions specified by {@link GridExporter.setColumnPosition}
-   *
-   * @return
+   * Get columns in the positions specified by {@link GridExporter#setColumnPosition(Column, int)}
    */
   public List<Column<T>> getColumnsOrdered() {
     return columns == null
@@ -563,4 +785,22 @@ public class GridExporter<T> implements Serializable {
             .sorted(Comparator.comparing(this::getColumnPosition))
             .collect(Collectors.toList());
   }
+
+  public void setFooterToolbarItems(List<FooterToolbarItem> footerToolbarItems) {
+    this.footerToolbarItems = footerToolbarItems;
+  }
+
+  /**
+   * Charset to use when exporting the CSV file.
+   *
+   * @return CSV file charset or default one.
+   */
+  public Charset getCsvCharset() {
+    return csvCharset == null ? Charset.defaultCharset() : csvCharset.get();
+  }
+
+  public void setCsvCharset(SerializableSupplier<Charset> charset) {
+    csvCharset = charset;
+  }
+
 }

@@ -2,7 +2,7 @@
  * #%L
  * Grid Exporter Add-on
  * %%
- * Copyright (C) 2022 - 2023 Flowing Code
+ * Copyright (C) 2022 - 2024 Flowing Code
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@ package com.flowingcode.vaadin.addons.gridexporter;
 import com.opencsv.CSVWriter;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertySet;
+import com.vaadin.flow.server.VaadinSession;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
@@ -40,55 +40,54 @@ import org.slf4j.LoggerFactory;
  * @author mlope
  */
 @SuppressWarnings("serial")
-class CsvInputStreamFactory<T> extends BaseInputStreamFactory<T> {
+class CsvStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CsvInputStreamFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CsvStreamResourceWriter.class);
 
-  public CsvInputStreamFactory(GridExporter<T> exporter) {
+  public CsvStreamResourceWriter(GridExporter<T> exporter) {
     super(exporter, null, null);
   }
 
   @Override
-  public InputStream createInputStream() {
-    PipedInputStream in = new PipedInputStream();
+  public void accept(OutputStream out, VaadinSession session) throws IOException {
+
+    String[] headers;
+    List<String[]> data;
+    String[] footers;
+
+    session.lock();
     try {
       exporter.setColumns(
           exporter.grid.getColumns().stream()
-              .filter(this::isExportable)
-              .collect(Collectors.toList()));
+          .filter(this::isExportable)
+          .collect(Collectors.toList()));
 
-      String[] headers =
-          getGridHeaders(exporter.grid).stream().map(Pair::getLeft).toArray(String[]::new);
-      List<String[]> data =
-          obtainDataStream(exporter.grid.getDataProvider())
-              .map(this::buildRow)
-              .collect(Collectors.toList());
-      String[] footers =
-          getGridFooters(exporter.grid).stream()
-              .filter(pair -> StringUtils.isNotBlank(pair.getKey()))
-              .map(Pair::getLeft)
-              .toArray(String[]::new);
-
-      PipedOutputStream out = new PipedOutputStream(in);
-      new Thread(
-              () -> {
-                try (CSVWriter writer = new CSVWriter(new OutputStreamWriter(out))) {
-                  writer.writeNext(headers);
-                  writer.writeAll(data);
-                  if (footers.length > 0) {
-                    writer.writeNext(footers);
-                  }
-                } catch (IOException e) {
-                  LOGGER.error("Problem generating export", e);
-                } finally {
-                  IOUtils.closeQuietly(out);
-                }
-              })
-          .start();
-    } catch (IOException e) {
-      LOGGER.error("Problem generating export", e);
+      headers = getGridHeaders(exporter.grid).stream().map(Pair::getLeft).toArray(String[]::new);
+      data = obtainDataStream(exporter.grid.getDataProvider())
+          .map(this::buildRow)
+          .collect(Collectors.toList());
+      footers = getGridFooters(exporter.grid).stream()
+          .filter(pair -> StringUtils.isNotBlank(pair.getKey()))
+          .map(Pair::getLeft)
+          .toArray(String[]::new);
+    } finally {
+      session.unlock();
     }
-    return in;
+
+    try (
+        OutputStreamWriter os = new OutputStreamWriter(out, exporter.getCsvCharset());
+        CSVWriter writer = new CSVWriter(os)) {
+      if (StandardCharsets.UTF_8.equals(exporter.getCsvCharset())) {
+        // write BOM
+        os.write(0xfeff);
+      }
+
+      writer.writeNext(headers);
+      writer.writeAll(data);
+      if (footers.length > 0) {
+        writer.writeNext(footers);
+      }
+    }
   }
 
   @SuppressWarnings("unchecked")

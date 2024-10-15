@@ -2,7 +2,7 @@
  * #%L
  * Grid Exporter Add-on
  * %%
- * Copyright (C) 2022 - 2023 Flowing Code
+ * Copyright (C) 2022 - 2024 Flowing Code
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,27 +20,37 @@
 package com.flowingcode.vaadin.addons.gridexporter;
 
 import com.flowingcode.vaadin.addons.demo.DemoSource;
+import com.flowingcode.vaadin.addons.fontawesome.FontAwesome;
 import com.github.javafaker.Faker;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
-@PageTitle("Grid Exporter Addon Basic Demo")
+@PageTitle("Basic Demo")
 @Route(value = "gridexporter/basic", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
 public class GridExporterDemo extends Div {
+
+  private static final Faker faker = FakerInstance.get();
 
   public GridExporterDemo() throws EncryptedDocumentException, IOException {
     Grid<Person> grid = new Grid<>(Person.class);
@@ -59,7 +69,6 @@ public class GridExporterDemo extends Div {
             .asLongStream()
             .mapToObj(
                 number -> {
-                  Faker faker = new Faker();
                   Double budget = faker.number().randomDouble(2, 10000, 100000);
                   total[0] = total[0].add(BigDecimal.valueOf(budget));
                   budgetCol.setFooter("$" + total[0]);
@@ -75,9 +84,32 @@ public class GridExporterDemo extends Div {
     GridExporter<Person> exporter = GridExporter.createFor(grid);
     exporter.setExportValue(budgetCol, item -> "" + item.getBudget());
     exporter.setColumnPosition(lastNameCol, 1);
+    exporter.setAutoSizeColumns(false);
     exporter.setTitle("People information");
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
+    exporter.setCsvCharset(() -> StandardCharsets.UTF_8);
+
+    TextField filterField = new TextField();
+    filterField.setPlaceholder("Filter by");
+    filterField.setWidth("120px");
+
+    Select<String> shareSelect = new Select<>();
+    shareSelect.setItems("Whatsapp", "Facebook", "X (Twitter)");
+    shareSelect.setWidth("120px");
+    
+    Anchor zipLink = new Anchor("", FontAwesome.Regular.FILE_ZIPPER.create());
+    zipLink.setTitle("Download zip file");
+    zipLink.getElement().setAttribute("download", true);
+
+    exporter.setFooterToolbarItems(
+        List.of(new FooterToolbarItem(zipLink, FooterToolbarItemPosition.EXPORT_BUTTON),
+            new FooterToolbarItem(new Button("Share", VaadinIcon.SHARE.create())),
+            new FooterToolbarItem(shareSelect),
+            new FooterToolbarItem(filterField, FooterToolbarItemPosition.BEFORE_EXPORT_BUTTONS),
+            new FooterToolbarItem(new Button("Filter"),
+                FooterToolbarItemPosition.BEFORE_EXPORT_BUTTONS)));
+
     add(grid);
   }
 }

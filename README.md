@@ -1,6 +1,7 @@
 [![Published on Vaadin Directory](https://img.shields.io/badge/Vaadin%20Directory-published-00b4f0.svg)](https://vaadin.com/directory/component/grid-exporter-add-on)
 [![Stars on vaadin.com/directory](https://img.shields.io/vaadin-directory/star/grid-exporter-add-on.svg)](https://vaadin.com/directory/component/grid-exporter-add-on)
 [![Build Status](https://jenkins.flowingcode.com/job/GridExporter-addon/badge/icon)](https://jenkins.flowingcode.com/job/GridExporter-addon)
+[![Javadoc](https://img.shields.io/badge/javadoc-00b4f0)](https://javadoc.flowingcode.com/artifact/org.vaadin.addons.flowingcode/grid-exporter-addon)
 
 # Grid Exporter Add-on
 
@@ -63,7 +64,7 @@ Contributions are welcome, but there are no guarantees that they are accepted as
 
 As first step, please refer to our [Development Conventions](https://github.com/FlowingCode/DevelopmentConventions) page to find information about Conventional Commits & Code Style requeriments.
 
-Then, follow these steps for creating a contibution:
+Then, follow these steps for creating a contribution:
 
 - Fork this project.
 - Create an issue to this project about the contribution (bug or feature) if there is no such issue about it already. Try to keep the scope minimal.

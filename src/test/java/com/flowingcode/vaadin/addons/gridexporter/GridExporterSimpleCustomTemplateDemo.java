@@ -2,7 +2,7 @@
  * #%L
  * Grid Exporter Add-on
  * %%
- * Copyright (C) 2022 - 2023 Flowing Code
+ * Copyright (C) 2022 - 2024 Flowing Code
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,13 +48,14 @@ import java.util.stream.Stream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
-@PageTitle("Grid Exporter Addon Simple Custom Templates Demo")
+@PageTitle("Simple Custom Templates")
 @Route(value = "gridexporter/simple-custom", layout = GridExporterDemoView.class)
 @SuppressWarnings("serial")
 public class GridExporterSimpleCustomTemplateDemo extends Div {
 
+  private static final Faker faker = FakerInstance.get();
+
   public GridExporterSimpleCustomTemplateDemo() throws EncryptedDocumentException, IOException {
-    Faker faker = new Faker();
     DecimalFormat decimalFormat = new DecimalFormat("$#,###.##");
     Grid<Person> grid = new Grid<>(Person.class);
     grid.removeAllColumns();
@@ -75,9 +76,7 @@ public class GridExporterSimpleCustomTemplateDemo extends Div {
             .setHeader("Quantity")
             .setTextAlign(ColumnTextAlign.END);
     Column<Person> dateColumn1 =
-        grid.addColumn(
-                new LocalDateRenderer<>(
-                    Person::getFavDate, DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+        grid.addColumn(new LocalDateRenderer<>(Person::getFavDate, "dd/MM/yyyy"))
             .setHeader("Fav Date")
             .setTextAlign(ColumnTextAlign.CENTER);
     Column<Person> dateColumn2 =
@@ -109,6 +108,7 @@ public class GridExporterSimpleCustomTemplateDemo extends Div {
             grid, "/simple-custom-template.xlsx", "/simple-custom-template.docx");
     exporter.setSheetNumber(1);
     exporter.setCsvExportEnabled(false);
+    exporter.setAutoSizeColumns(false);
     exporter.setNumberColumnFormat(minBudgetColumn, "$#.###,##");
     exporter.setNumberColumnFormat(maxBudgetColumn, decimalFormat, "$#,###.##");
     exporter.setNumberColumnFormatProvider(quantityColumn, decimalFormat, (person)->person==null?"":

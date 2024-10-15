@@ -2,7 +2,7 @@
  * #%L
  * Grid Exporter Add-on
  * %%
- * Copyright (C) 2022 - 2023 Flowing Code
+ * Copyright (C) 2022 - 2024 Flowing Code
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.data.provider.hierarchy.HierarchicalDataProvider;
 import com.vaadin.flow.data.provider.hierarchy.HierarchicalQuery;
-import com.vaadin.flow.server.InputStreamFactory;
+import com.vaadin.flow.server.StreamResourceWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,22 +44,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("serial")
-abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
+abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BaseInputStreamFactory.class);
-  protected GridExporter<T> exporter;
-  protected String template;
+  private static final Logger LOGGER = LoggerFactory.getLogger(BaseStreamResourceWriter.class);
 
-  public BaseInputStreamFactory(GridExporter<T> exporter) {
+  protected final GridExporter<T> exporter;
+  private String template;
+
+  public BaseStreamResourceWriter(GridExporter<T> exporter) {
     super();
     this.exporter = exporter;
   }
 
-  public BaseInputStreamFactory(
+  public BaseStreamResourceWriter(
       GridExporter<T> exporter, String customTemplate, String defaultTemplate) {
     super();
     this.exporter = exporter;
     template = customTemplate == null ? defaultTemplate : customTemplate;
+  }
+
+  protected String getTemplate() {
+    return template;
   }
 
   /**
@@ -168,12 +173,12 @@ abstract class BaseInputStreamFactory<T> implements InputStreamFactory {
     return dataStream;
   }
 
-  protected Stream<T> obtainFlattenedHierarchicalDataStream(final Grid<T> grid) {
+  private Stream<T> obtainFlattenedHierarchicalDataStream(final Grid<T> grid) {
     ArrayList<T> flattenedData = fetchDataRecursive(grid, null);
     return flattenedData.stream();
   }
 
-  protected ArrayList<T> fetchDataRecursive(final Grid<T> grid, T parent) {
+  private ArrayList<T> fetchDataRecursive(final Grid<T> grid, T parent) {
     ArrayList<T> result = new ArrayList<>();
 
     if (parent != null) result.add(parent);
