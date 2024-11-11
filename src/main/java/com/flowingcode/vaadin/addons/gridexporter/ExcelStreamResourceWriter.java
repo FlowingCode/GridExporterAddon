@@ -357,6 +357,9 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     }
     if (value == null) {
       PoiHelper.setBlank(cell);
+      if(excelFormat != null) {       
+        applyExcelFormat(cell, excelFormat, cellStyles);
+      }
     } else if (value instanceof Number) {
       excelFormat = (excelFormat!=null)?excelFormat:"0";
       cell.setCellValue(((Number) value).doubleValue());
