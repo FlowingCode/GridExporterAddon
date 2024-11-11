@@ -341,20 +341,9 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
 
   @SuppressWarnings("unchecked")
   private void buildCell(Object value, Cell cell, Column<T> column, T item) {
-    ValueProvider<T,String> provider = null;
-    provider = (ValueProvider<T, String>) ComponentUtil.getData(column, GridExporter.COLUMN_EXCEL_FORMAT_DATA_PROVIDER);
-    String excelFormat;
-    Map<String,CellStyle> cellStyles = (Map<String, CellStyle>) ComponentUtil.getData(column, COLUMN_CELLSTYLE_MAP);
-    if (cellStyles==null) {
-      cellStyles = new HashMap<>();
-      ComponentUtil.setData(column, COLUMN_CELLSTYLE_MAP, cellStyles);
-    }
-    if (provider!=null) {
-      excelFormat = provider.apply(item);
-    } else {
-      excelFormat =
-          (String) ComponentUtil.getData(column, GridExporter.COLUMN_EXCEL_FORMAT_DATA);
-    }
+    ValueProvider<T,String> provider = (ValueProvider<T, String>) ComponentUtil.getData(column, GridExporter.COLUMN_EXCEL_FORMAT_DATA_PROVIDER);
+    Map<String, CellStyle> cellStyles = getCellStyles(column);
+    String excelFormat = getExcelFormat(column, item, provider);
     if (value == null) {
       PoiHelper.setBlank(cell);
       if(excelFormat != null) {       
@@ -376,6 +365,27 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     } else {
       cell.setCellValue(value.toString());
     }
+  }
+
+  private String getExcelFormat(Column<T> column, T item, ValueProvider<T, String> provider) {
+    String excelFormat;
+    if (provider!=null) {
+      excelFormat = provider.apply(item);
+    } else {
+      excelFormat =
+          (String) ComponentUtil.getData(column, GridExporter.COLUMN_EXCEL_FORMAT_DATA);
+    }
+    return excelFormat;
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, CellStyle> getCellStyles(Column<T> column) {
+    Map<String,CellStyle> cellStyles = (Map<String, CellStyle>) ComponentUtil.getData(column, COLUMN_CELLSTYLE_MAP);
+    if (cellStyles==null) {
+      cellStyles = new HashMap<>();
+      ComponentUtil.setData(column, COLUMN_CELLSTYLE_MAP, cellStyles);
+    }
+    return cellStyles;
   }
 
   private void applyExcelFormat(Cell cell, String excelFormat, Map<String, CellStyle> cellStyles) {
