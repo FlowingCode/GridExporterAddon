@@ -162,7 +162,7 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
       }
     }
 
-    return headerOrFooter;
+    return headerOrFooter==null?"":headerOrFooter;
   }
 
   protected Stream<T> obtainDataStream(DataProvider<T, ?> dataProvider) {
