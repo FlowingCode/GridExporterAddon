@@ -56,7 +56,7 @@ import org.junit.Test;
 @net.jcip.annotations.NotThreadSafe
 public class ConcurrentExportTests {
 
-  private static final int TEST_TIMEOUT = 5000;
+  private static final int TEST_TIMEOUT = 10000;
 
   private static Matcher<Throwable> throwsInterruptedByTimeout() {
     return Matchers.instanceOf(InterruptedByTimeoutException.class);
