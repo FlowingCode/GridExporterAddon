@@ -7,6 +7,7 @@
 	<version>2.5.1-SNAPSHOT</version>
 	<name>Grid Exporter Add-on</name>
 	<description>Grid Exporter Add-on for Vaadin Flow</description>
+	<url>https://www.flowingcode.com/en/open-source/</url>
 
 	<properties>
         <vaadin.version>24.3.9</vaadin.version>
