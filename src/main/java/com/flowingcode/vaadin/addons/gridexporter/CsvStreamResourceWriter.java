@@ -60,7 +60,7 @@ class CsvStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
           .filter(this::isExportable)
           .collect(Collectors.toList()));
 
-      headers = getGridHeaders(grid).stream().map(GridHeader::getTexts).toArray(String[]::new);
+      headers = getGridHeaders(grid).stream().map(GridHeader::getText).toArray(String[]::new);
       data = obtainDataStream(grid.getDataProvider())
           .map(this::buildRow)
           .collect(Collectors.toList());
