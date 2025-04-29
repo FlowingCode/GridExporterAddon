@@ -43,7 +43,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
@@ -55,7 +54,6 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.SheetConditionalFormatting;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +93,7 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
       }
 
       Cell cell = findCellWithPlaceHolder(sheet, exporter.headersPlaceHolder);
-      List<Pair<List<String>, Column<T>>> headers = getGridHeaders(grid);
+      List<GridHeader<T>> headers = getGridHeaders(grid);
 
       fillHeaderOrFooter(sheet, cell, headers, true);
       if (exporter.autoMergeTitle && titleCell != null && exporter.getColumns().size()>1) {
@@ -123,7 +121,7 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
       wb.removeSheetAt(exporter.sheetNumber + 1);
 
       cell = findCellWithPlaceHolder(sheet, exporter.footersPlaceHolder);
-      List<Pair<String, Column<T>>> footers = getGridFooters(grid);
+      List<GridFooter<T>> footers = getGridFooters(grid);
       if (cell != null) {
         fillFooter(sheet, cell, footers, false);
       }
@@ -346,7 +344,7 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     String excelFormat = getExcelFormat(column, item, provider);
     if (value == null) {
       PoiHelper.setBlank(cell);
-      if(excelFormat != null) {       
+      if(excelFormat != null) {
         applyExcelFormat(cell, excelFormat, cellStyles);
       }
     } else if (value instanceof Number) {
@@ -425,21 +423,19 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
   }
 
   private void fillFooter(Sheet sheet, Cell headersOrFootersCell,
-      List<Pair<String, Column<T>>> headersOrFooters, boolean isHeader) {
-    List<Pair<List<String>, Column<T>>> headersOrFootersCellSingleRow = headersOrFooters.stream()
-        .map(pair -> Pair.of(List.of(pair.getLeft()), pair.getRight())).collect(Collectors.toList());
-    fillHeaderOrFooter(sheet, headersOrFootersCell, headersOrFootersCellSingleRow, isHeader);
+      List<GridFooter<T>> headersOrFooters, boolean isHeader) {
+    fillHeaderOrFooter(sheet, headersOrFootersCell, headersOrFooters, isHeader);
   }
   private void fillHeaderOrFooter(Sheet sheet, Cell headersOrFootersCell,
-      List<Pair<List<String>, Column<T>>> headersOrFooters, boolean isHeader) {
+      List<? extends GridHeaderOrFooter<T>> headersOrFooters, boolean isHeader) {
     CellStyle style = headersOrFootersCell.getCellStyle();
-    
+
     int startRow = headersOrFootersCell.getRowIndex();
     int currentColumn = headersOrFootersCell.getColumnIndex();
     boolean shiftFirstTime = true;
-    for (Pair<List<String>, Column<T>> headerOrFooter : headersOrFooters) {
-      List<String> headerOrFooterTexts = headerOrFooter.getLeft();
-      Column<T> column = headerOrFooter.getRight();
+    for (GridHeaderOrFooter<T> headerOrFooter : headersOrFooters) {
+      List<String> headerOrFooterTexts = headerOrFooter.getTexts();
+      Column<T> column = headerOrFooter.getColumn();
       if (!isHeader) {
         ComponentUtil.setData(column, COLUMN_CELLSTYLE_MAP, null);
       }

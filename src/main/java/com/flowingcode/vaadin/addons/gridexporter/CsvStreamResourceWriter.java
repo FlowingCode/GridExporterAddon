@@ -30,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,13 +60,13 @@ class CsvStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
           .filter(this::isExportable)
           .collect(Collectors.toList()));
 
-      headers = getGridHeaders(grid).stream().map(Pair::getLeft).toArray(String[]::new);
+      headers = getGridHeaders(grid).stream().map(GridHeader::getTexts).toArray(String[]::new);
       data = obtainDataStream(grid.getDataProvider())
           .map(this::buildRow)
           .collect(Collectors.toList());
       footers = getGridFooters(grid).stream()
-          .filter(pair -> StringUtils.isNotBlank(pair.getKey()))
-          .map(Pair::getLeft)
+          .map(GridFooter::getText)
+          .filter(StringUtils::isNotBlank)
           .toArray(String[]::new);
     } finally {
       session.unlock();

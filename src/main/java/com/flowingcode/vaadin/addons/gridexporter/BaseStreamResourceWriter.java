@@ -95,13 +95,13 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
     return stream;
   }
 
-  protected List<Pair<List<String>, Column<T>>> getGridHeaders(Grid<T> grid) {
+  protected List<GridHeader<T>> getGridHeaders(Grid<T> grid) {
     return exporter.getColumnsOrdered().stream()
-        .map(column -> ImmutablePair.of(getHeaderTexts(grid, column), column))
+        .map(column -> getGridHeader(grid, column))
         .collect(Collectors.toList());
   }
-  
-  private List<String> getHeaderTexts(Grid<T> grid, Column<T> column) {
+
+  private GridHeader<T> getGridHeader(Grid<T> grid, Column<T> column) {
       List<String> headerTexts = new ArrayList<>();
       List<HeaderRow> headerRows = grid.getHeaderRows();
       for (HeaderRow headerRow : headerRows) {
@@ -117,14 +117,14 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
           });
           headerTexts.add(headerText);
       }
-      return headerTexts;
+      return new GridHeader<>(headerTexts, column);
   }
 
-  protected List<Pair<String, Column<T>>> getGridFooters(Grid<T> grid) {
+  protected List<GridFooter<T>> getGridFooters(Grid<T> grid) {
     return exporter.getColumnsOrdered().stream()
         .map(
             column ->
-                ImmutablePair.of(
+                new GridFooter<>(
                     renderCellTextContent(grid, column, GridExporter.COLUMN_FOOTER, null),column
                     )
             )
