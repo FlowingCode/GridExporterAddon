@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -128,10 +127,7 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
                   cctblgridcol, "" + Math.round(9638 / exporter.getColumns().size()));
             });
 
-    List<Pair<String, Column<T>>> headers = getGridHeaders(grid).stream()
-        .map(pair -> 
-        Pair.of(pair.getLeft().get(0), pair.getRight())
-        ).collect(Collectors.toList());
+    List<GridHeader<T>> headers = getGridHeaders(grid);
     XWPFTableCell cell = findCellWithPlaceHolder(table, exporter.headersPlaceHolder);
     if (cell != null) {
       fillHeaderOrFooter(table, cell, headers, true, exporter.headersPlaceHolder);
@@ -141,7 +137,7 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     fillData(table, cell, grid.getDataProvider());
 
     cell = findCellWithPlaceHolder(table, exporter.footersPlaceHolder);
-    List<Pair<String, Column<T>>> footers = getGridFooters(grid);
+    List<GridFooter<T>> footers = getGridFooters(grid);
     if (cell != null) {
       fillHeaderOrFooter(table, cell, footers, false, exporter.footersPlaceHolder);
     }
@@ -275,7 +271,7 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
   private void fillHeaderOrFooter(
       XWPFTable table,
       XWPFTableCell cell,
-      List<Pair<String, Column<T>>> headers,
+      List<? extends GridHeaderOrFooter<T>> headers,
       boolean createColumns,
       String placeHolder) {
     boolean[] firstHeader = new boolean[] {true};
@@ -287,7 +283,7 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
             currentCell.getCTTc().setTcPr(cell.getCTTc().getTcPr());
             PoiHelper.setWidth(currentCell, "" + Math.round(9638 / exporter.getColumns().size()));
             setCellValue(
-                header.getLeft(),
+                header.getText(),
                 currentCell,
                 placeHolder,
                 cell.getParagraphs().iterator().next().getCTP().getPPr(),
@@ -299,10 +295,10 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
                     .next()
                     .getCTR()
                     .getRPr());
-            setCellAlignment(currentCell, header.getRight().getTextAlign());
+            setCellAlignment(currentCell, header.getColumn().getTextAlign());
           } else {
-            setCellValue(header.getLeft(), cell, placeHolder);
-            setCellAlignment(cell, header.getRight().getTextAlign());
+            setCellValue(header.getText(), cell, placeHolder);
+            setCellAlignment(cell, header.getColumn().getTextAlign());
             PoiHelper.setWidth(cell, "" + Math.round(9638 / exporter.getColumns().size()));
             firstHeader[0] = false;
           }
