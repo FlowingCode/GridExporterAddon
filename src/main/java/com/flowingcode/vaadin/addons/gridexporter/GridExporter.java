@@ -137,6 +137,12 @@ public class GridExporter<T> implements Serializable {
 
   private SerializableSupplier<Charset> csvCharset;
 
+  private String defaultExportIconTooltip = null;
+  private String excelIconTooltip = null;
+  private String docxIconTooltip = null;
+  private String pdfIconTooltip = null;
+  private String csvIconTooltip = null;
+
   private GridExporter(Grid<T> grid) {
     this.grid = grid;
   }
@@ -160,6 +166,17 @@ public class GridExporter<T> implements Serializable {
                       .setHref(exporter.getExcelStreamResource(excelCustomTemplate)
                           .forComponent(excelLink));
                   excelLink.getElement().setAttribute("download", true);
+                  String finalExcelTooltip = null;
+                  if (exporter.excelIconTooltip != null) {
+                    finalExcelTooltip = exporter.excelIconTooltip;
+                  } else if (exporter.defaultExportIconTooltip != null) {
+                    finalExcelTooltip = exporter.defaultExportIconTooltip;
+                  }
+                  if (finalExcelTooltip != null && !finalExcelTooltip.isEmpty()) {
+                    excelLink.setTitle(finalExcelTooltip);
+                  } else {
+                    excelLink.setTitle(null);
+                  }
                   footerToolbar.add(
                       new FooterToolbarItem(excelLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
@@ -168,21 +185,54 @@ public class GridExporter<T> implements Serializable {
                   docLink.setHref(
                       exporter.getDocxStreamResource(docxCustomTemplate).forComponent(docLink));
                   docLink.getElement().setAttribute("download", true);
+                  String finalDocxTooltip = null;
+                  if (exporter.docxIconTooltip != null) {
+                    finalDocxTooltip = exporter.docxIconTooltip;
+                  } else if (exporter.defaultExportIconTooltip != null) {
+                    finalDocxTooltip = exporter.defaultExportIconTooltip;
+                  }
+                  if (finalDocxTooltip != null && !finalDocxTooltip.isEmpty()) {
+                    docLink.setTitle(finalDocxTooltip);
+                  } else {
+                    docLink.setTitle(null);
+                  }
                   footerToolbar
                       .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
                 if (exporter.isPdfExportEnabled()) {
-                  Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_PDF.create());
-                  docLink.setHref(
-                      exporter.getPdfStreamResource(docxCustomTemplate).forComponent(docLink));
-                  docLink.getElement().setAttribute("download", true);
+                  Anchor pdfLink = new Anchor("", FontAwesome.Regular.FILE_PDF.create()); // Renamed to pdfLink
+                  pdfLink.setHref(
+                      exporter.getPdfStreamResource(docxCustomTemplate).forComponent(pdfLink));
+                  pdfLink.getElement().setAttribute("download", true);
+                  String finalPdfTooltip = null;
+                  if (exporter.pdfIconTooltip != null) {
+                    finalPdfTooltip = exporter.pdfIconTooltip;
+                  } else if (exporter.defaultExportIconTooltip != null) {
+                    finalPdfTooltip = exporter.defaultExportIconTooltip;
+                  }
+                  if (finalPdfTooltip != null && !finalPdfTooltip.isEmpty()) {
+                    pdfLink.setTitle(finalPdfTooltip);
+                  } else {
+                    pdfLink.setTitle(null);
+                  }
                   footerToolbar
-                      .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
+                      .add(new FooterToolbarItem(pdfLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
                 if (exporter.isCsvExportEnabled()) {
                   Anchor csvLink = new Anchor("", FontAwesome.Regular.FILE_LINES.create());
                   csvLink.setHref(exporter.getCsvStreamResource());
                   csvLink.getElement().setAttribute("download", true);
+                  String finalCsvTooltip = null;
+                  if (exporter.csvIconTooltip != null) {
+                    finalCsvTooltip = exporter.csvIconTooltip;
+                  } else if (exporter.defaultExportIconTooltip != null) {
+                    finalCsvTooltip = exporter.defaultExportIconTooltip;
+                  }
+                  if (finalCsvTooltip != null && !finalCsvTooltip.isEmpty()) {
+                    csvLink.setTitle(finalCsvTooltip);
+                  } else {
+                    csvLink.setTitle(null);
+                  }
                   footerToolbar
                       .add(new FooterToolbarItem(csvLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
@@ -810,6 +860,66 @@ public class GridExporter<T> implements Serializable {
 
   public void setCsvCharset(SerializableSupplier<Charset> charset) {
     csvCharset = charset;
+  }
+
+  /**
+   * Sets the default tooltip text for all export icons.
+   * This tooltip will be used for any export icon that does not have a specific tooltip set
+   * via methods like {@link #setExcelExportIconTooltip(String)}.
+   *
+   * @param tooltipText The text to display as the tooltip. Passing {@code null} removes the
+   *        default tooltip. An empty string ({@code ""}) should result in the tooltip being cleared.
+   */
+  public void setDefaultExportIconTooltip(String tooltipText) {
+    this.defaultExportIconTooltip = tooltipText;
+  }
+
+  /**
+   * Sets the tooltip text for the Excel export icon.
+   * This overrides any tooltip set by {@link #setDefaultExportIconTooltip(String)} for the Excel icon.
+   *
+   * @param tooltipText The text to display as the tooltip for the Excel icon. Passing {@code null}
+   *        removes this specific tooltip (the default tooltip may then apply). An empty string
+   *        ({@code ""}) should result in the tooltip being cleared.
+   */
+  public void setExcelExportIconTooltip(String tooltipText) {
+    this.excelIconTooltip = tooltipText;
+  }
+
+  /**
+   * Sets the tooltip text for the DOCX (Word) export icon.
+   * This overrides any tooltip set by {@link #setDefaultExportIconTooltip(String)} for the DOCX icon.
+   *
+   * @param tooltipText The text to display as the tooltip for the DOCX icon. Passing {@code null}
+   *        removes this specific tooltip (the default tooltip may then apply). An empty string
+   *        ({@code ""}) should result in the tooltip being cleared.
+   */
+  public void setDocxExportIconTooltip(String tooltipText) {
+    this.docxIconTooltip = tooltipText;
+  }
+
+  /**
+   * Sets the tooltip text for the PDF export icon.
+   * This overrides any tooltip set by {@link #setDefaultExportIconTooltip(String)} for the PDF icon.
+   *
+   * @param tooltipText The text to display as the tooltip for the PDF icon. Passing {@code null}
+   *        removes this specific tooltip (the default tooltip may then apply). An empty string
+   *        ({@code ""}) should result in the tooltip being cleared.
+   */
+  public void setPdfExportIconTooltip(String tooltipText) {
+    this.pdfIconTooltip = tooltipText;
+  }
+
+  /**
+   * Sets the tooltip text for the CSV export icon.
+   * This overrides any tooltip set by {@link #setDefaultExportIconTooltip(String)} for the CSV icon.
+   *
+   * @param tooltipText The text to display as the tooltip for the CSV icon. Passing {@code null}
+   *        removes this specific tooltip (the default tooltip may then apply). An empty string
+   *        ({@code ""}) should result in the tooltip being cleared.
+   */
+  public void setCsvExportIconTooltip(String tooltipText) {
+    this.csvIconTooltip = tooltipText;
   }
 
 }
