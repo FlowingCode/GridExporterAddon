@@ -166,17 +166,11 @@ public class GridExporter<T> implements Serializable {
                       .setHref(exporter.getExcelStreamResource(excelCustomTemplate)
                           .forComponent(excelLink));
                   excelLink.getElement().setAttribute("download", true);
-                  String finalExcelTooltip = null;
-                  if (exporter.excelIconTooltip != null) {
-                    finalExcelTooltip = exporter.excelIconTooltip;
-                  } else if (exporter.defaultExportIconTooltip != null) {
-                    finalExcelTooltip = exporter.defaultExportIconTooltip;
-                  }
-                  if (finalExcelTooltip != null && !finalExcelTooltip.isEmpty()) {
-                    excelLink.setTitle(finalExcelTooltip);
-                  } else {
-                    excelLink.setTitle(null);
-                  }
+                  excelLink
+                      .setHref(exporter.getExcelStreamResource(excelCustomTemplate)
+                          .forComponent(excelLink));
+                  excelLink.getElement().setAttribute("download", true);
+                  exporter.applyTooltip(excelLink, exporter.excelIconTooltip);
                   footerToolbar.add(
                       new FooterToolbarItem(excelLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
@@ -185,36 +179,16 @@ public class GridExporter<T> implements Serializable {
                   docLink.setHref(
                       exporter.getDocxStreamResource(docxCustomTemplate).forComponent(docLink));
                   docLink.getElement().setAttribute("download", true);
-                  String finalDocxTooltip = null;
-                  if (exporter.docxIconTooltip != null) {
-                    finalDocxTooltip = exporter.docxIconTooltip;
-                  } else if (exporter.defaultExportIconTooltip != null) {
-                    finalDocxTooltip = exporter.defaultExportIconTooltip;
-                  }
-                  if (finalDocxTooltip != null && !finalDocxTooltip.isEmpty()) {
-                    docLink.setTitle(finalDocxTooltip);
-                  } else {
-                    docLink.setTitle(null);
-                  }
+                  exporter.applyTooltip(docLink, exporter.docxIconTooltip);
                   footerToolbar
                       .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
                 if (exporter.isPdfExportEnabled()) {
-                  Anchor pdfLink = new Anchor("", FontAwesome.Regular.FILE_PDF.create()); // Renamed to pdfLink
+                  Anchor pdfLink = new Anchor("", FontAwesome.Regular.FILE_PDF.create());
                   pdfLink.setHref(
-                      exporter.getPdfStreamResource(docxCustomTemplate).forComponent(pdfLink));
+                      exporter.getPdfStreamResource(null).forComponent(pdfLink));
                   pdfLink.getElement().setAttribute("download", true);
-                  String finalPdfTooltip = null;
-                  if (exporter.pdfIconTooltip != null) {
-                    finalPdfTooltip = exporter.pdfIconTooltip;
-                  } else if (exporter.defaultExportIconTooltip != null) {
-                    finalPdfTooltip = exporter.defaultExportIconTooltip;
-                  }
-                  if (finalPdfTooltip != null && !finalPdfTooltip.isEmpty()) {
-                    pdfLink.setTitle(finalPdfTooltip);
-                  } else {
-                    pdfLink.setTitle(null);
-                  }
+                  exporter.applyTooltip(pdfLink, exporter.pdfIconTooltip);
                   footerToolbar
                       .add(new FooterToolbarItem(pdfLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
@@ -222,17 +196,7 @@ public class GridExporter<T> implements Serializable {
                   Anchor csvLink = new Anchor("", FontAwesome.Regular.FILE_LINES.create());
                   csvLink.setHref(exporter.getCsvStreamResource());
                   csvLink.getElement().setAttribute("download", true);
-                  String finalCsvTooltip = null;
-                  if (exporter.csvIconTooltip != null) {
-                    finalCsvTooltip = exporter.csvIconTooltip;
-                  } else if (exporter.defaultExportIconTooltip != null) {
-                    finalCsvTooltip = exporter.defaultExportIconTooltip;
-                  }
-                  if (finalCsvTooltip != null && !finalCsvTooltip.isEmpty()) {
-                    csvLink.setTitle(finalCsvTooltip);
-                  } else {
-                    csvLink.setTitle(null);
-                  }
+                  exporter.applyTooltip(csvLink, exporter.csvIconTooltip);
                   footerToolbar
                       .add(new FooterToolbarItem(csvLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
@@ -860,6 +824,14 @@ public class GridExporter<T> implements Serializable {
 
   public void setCsvCharset(SerializableSupplier<Charset> charset) {
     csvCharset = charset;
+  }
+
+  private void applyTooltip(Anchor link, String specificTooltipText) {
+    String finalTooltip = specificTooltipText;
+    if (finalTooltip == null) {
+        finalTooltip = this.defaultExportIconTooltip;
+    }
+    link.setTitle(finalTooltip);
   }
 
   /**

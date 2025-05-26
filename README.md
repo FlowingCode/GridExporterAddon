@@ -134,9 +134,9 @@ You can set a default tooltip that applies to all export icons, or provide speci
 
 ### Behavior and Precedence
 
-*   If a specific tooltip is set for an icon (e.g., `setExcelExportIconTooltip("Specific")`), it is always used for that icon.
-*   If a specific tooltip is *not* set for an icon, or if it's set to `null`, but a default tooltip is set (e.g., `setDefaultExportIconTooltip("Default")`), the default tooltip is used.
-*   If neither a specific nor a default tooltip is set (or both are `null`) for an icon, it will have no tooltip (the `title` attribute will be removed from the anchor).
+*   A specific tooltip, when set for an icon (e.g., `setExcelExportIconTooltip("Specific")`), always takes precedence for that icon.
+*   When an icon's specific tooltip is not set or is `null`, the default tooltip (set by `setDefaultExportIconTooltip("Default")`) will be applied.
+*   Should neither a specific nor a default tooltip be configured for an icon (or if both are `null`), the icon will not display a tooltip (its `title` attribute will be removed).
 
 ### Removing or Clearing Tooltips
 
