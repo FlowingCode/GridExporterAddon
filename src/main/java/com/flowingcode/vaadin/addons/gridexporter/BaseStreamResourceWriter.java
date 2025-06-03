@@ -136,17 +136,17 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
     String header = (String) ComponentUtil.getData(column, GridExporter.COLUMN_HEADER);
 
     if (Strings.isBlank(header)) {
-      header = column.getHeaderText();
-
-      if (Strings.isBlank(header)) {
-      try {
-        HeaderCell headerCell = headerRow.getCell(column);
-        header = obtainCellFunction(headerCell, column);
-      } catch (RuntimeException e) {
-        throw new IllegalStateException(
+      HeaderCell headerCell = headerRow.getCell(column);
+      int columnIndex = grid.getColumns().indexOf(column);
+      if (columnIndex == 0
+          || headerRow.getCell(grid.getColumns().get(columnIndex - 1)) != headerCell) {
+        try {
+          header = obtainCellFunction(headerCell, column);
+        } catch (RuntimeException e) {
+          throw new IllegalStateException(
               "Problem when trying to render header cell text content", e);
+        }
       }
-    }
     }
 
     return header == null ? "" : header;
