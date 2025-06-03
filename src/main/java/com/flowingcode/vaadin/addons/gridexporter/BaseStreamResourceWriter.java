@@ -133,21 +133,11 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
       SerializableFunction<Column<T>, String> obtainCellFunction) {
     String headerOrFooter = (String) ComponentUtil.getData(column, GridExporter.COLUMN_HEADER);
     if (Strings.isBlank(headerOrFooter)) {
-      SerializableFunction<Column<?>, Component> getHeaderOrFooterComponent;
-      getHeaderOrFooterComponent = Column::getHeaderComponent;
       headerOrFooter = column.getHeaderText();
 
       if (Strings.isBlank(headerOrFooter)) {
         try {
-          Component component;
-          if (obtainCellFunction != null) {
             headerOrFooter = obtainCellFunction.apply(column);
-          } else {
-            component = getHeaderOrFooterComponent.apply(column);
-            if (component != null) {
-              headerOrFooter = component.getElement().getTextRecursively();
-            }
-          }
         } catch (RuntimeException e) {
           throw new IllegalStateException(
               "Problem when trying to render header or footer cell text content", e);
