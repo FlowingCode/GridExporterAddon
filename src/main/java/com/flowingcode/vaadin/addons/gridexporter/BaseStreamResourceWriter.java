@@ -103,7 +103,7 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
       List<String> headerTexts = new ArrayList<>();
       List<HeaderRow> headerRows = grid.getHeaderRows();
       for (HeaderRow headerRow : headerRows) {
-          String headerText = renderHeaderCellTextContent(grid, column, GridExporter.COLUMN_HEADER, (col) -> {
+        String headerText = renderHeaderCellTextContent(grid, column, (col) -> {
             String value = headerRow.getCell(col).getText();
             if (Strings.isBlank(value)) {
               Component component = headerRow.getCell(col).getComponent();
@@ -123,14 +123,15 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
         .map(
             column ->
                 new GridFooter<>(
-                    renderFooterCellTextContent(grid, column, GridExporter.COLUMN_FOOTER, null),column
+                renderFooterCellTextContent(grid, column, null), column
                     )
             )
         .collect(Collectors.toList());
   }
 
-  private String renderHeaderCellTextContent(Grid<T> grid, Column<T> column, String columnType, 
+  private String renderHeaderCellTextContent(Grid<T> grid, Column<T> column,
       SerializableFunction<Column<T>, String> obtainCellFunction) {
+    String columnType = GridExporter.COLUMN_HEADER;
     String headerOrFooter = (String) ComponentUtil.getData(column, columnType);
     if (Strings.isBlank(headerOrFooter)) {
       SerializableFunction<Column<?>, Component> getHeaderOrFooterComponent;
@@ -164,8 +165,9 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
     return headerOrFooter == null ? "" : headerOrFooter;
   }
 
-  private String renderFooterCellTextContent(Grid<T> grid, Column<T> column, String columnType, 
+  private String renderFooterCellTextContent(Grid<T> grid, Column<T> column,
       SerializableFunction<Column<T>, String> obtainCellFunction) {
+    String columnType = GridExporter.COLUMN_FOOTER;
     String headerOrFooter = (String) ComponentUtil.getData(column, columnType);
     if (Strings.isBlank(headerOrFooter)) {
       SerializableFunction<Column<?>, Component> getHeaderOrFooterComponent;
