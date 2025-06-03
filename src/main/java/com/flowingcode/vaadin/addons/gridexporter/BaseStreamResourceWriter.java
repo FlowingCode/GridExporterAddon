@@ -131,45 +131,45 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
 
   private String renderHeaderCellTextContent(Grid<T> grid, Column<T> column,
       SerializableFunction<Column<T>, String> obtainCellFunction) {
-    String headerOrFooter = (String) ComponentUtil.getData(column, GridExporter.COLUMN_HEADER);
-    if (Strings.isBlank(headerOrFooter)) {
-      headerOrFooter = column.getHeaderText();
+    String header = (String) ComponentUtil.getData(column, GridExporter.COLUMN_HEADER);
+    if (Strings.isBlank(header)) {
+      header = column.getHeaderText();
 
-      if (Strings.isBlank(headerOrFooter)) {
+      if (Strings.isBlank(header)) {
         try {
-            headerOrFooter = obtainCellFunction.apply(column);
+            header = obtainCellFunction.apply(column);
         } catch (RuntimeException e) {
           throw new IllegalStateException(
-              "Problem when trying to render header or footer cell text content", e);
+              "Problem when trying to render header cell text content", e);
         }
       }
     }
 
-    return headerOrFooter == null ? "" : headerOrFooter;
+    return header == null ? "" : header;
   }
 
   private String renderFooterCellTextContent(Grid<T> grid, Column<T> column) {
-    String headerOrFooter = (String) ComponentUtil.getData(column, GridExporter.COLUMN_FOOTER);
-    if (Strings.isBlank(headerOrFooter)) {
-      SerializableFunction<Column<?>, Component> getHeaderOrFooterComponent;
-      getHeaderOrFooterComponent = Column::getFooterComponent;
-      headerOrFooter = column.getFooterText();
+    String footer = (String) ComponentUtil.getData(column, GridExporter.COLUMN_FOOTER);
+    if (Strings.isBlank(footer)) {
+      SerializableFunction<Column<?>, Component> footerComponent;
+      footerComponent = Column::getFooterComponent;
+      footer = column.getFooterText();
 
-      if (Strings.isBlank(headerOrFooter)) {
+      if (Strings.isBlank(footer)) {
         try {
           Component component;
-            component = getHeaderOrFooterComponent.apply(column);
+            component = footerComponent.apply(column);
           if (component != null) {
-              headerOrFooter = component.getElement().getTextRecursively();
+              footer = component.getElement().getTextRecursively();
           }
         } catch (RuntimeException e) {
           throw new IllegalStateException(
-              "Problem when trying to render header or footer cell text content", e);
+              "Problem when trying to render footer cell text content", e);
         }
       }
     }
 
-    return headerOrFooter==null?"":headerOrFooter;
+    return footer==null?"":footer;
   }
 
   protected Stream<T> obtainDataStream(DataProvider<T, ?> dataProvider) {
