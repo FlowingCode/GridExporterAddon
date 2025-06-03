@@ -123,7 +123,7 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
         .map(
             column ->
                 new GridFooter<>(
-                renderFooterCellTextContent(grid, column, null), column
+                renderFooterCellTextContent(grid, column), column
                     )
             )
         .collect(Collectors.toList());
@@ -158,8 +158,7 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
     return headerOrFooter == null ? "" : headerOrFooter;
   }
 
-  private String renderFooterCellTextContent(Grid<T> grid, Column<T> column,
-      SerializableFunction<Column<T>, String> obtainCellFunction) {
+  private String renderFooterCellTextContent(Grid<T> grid, Column<T> column) {
     String headerOrFooter = (String) ComponentUtil.getData(column, GridExporter.COLUMN_FOOTER);
     if (Strings.isBlank(headerOrFooter)) {
       SerializableFunction<Column<?>, Component> getHeaderOrFooterComponent;
@@ -169,13 +168,9 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
       if (Strings.isBlank(headerOrFooter)) {
         try {
           Component component;
-          if (obtainCellFunction!=null) {
-            headerOrFooter = obtainCellFunction.apply(column);
-          } else {
             component = getHeaderOrFooterComponent.apply(column);
-            if (component != null) {
+          if (component != null) {
               headerOrFooter = component.getElement().getTextRecursively();
-            }
           }
         } catch (RuntimeException e) {
           throw new IllegalStateException(
