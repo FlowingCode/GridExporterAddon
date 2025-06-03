@@ -57,11 +57,12 @@ public class GridExporterMultipleHeaderRowsDemo extends Div {
     Grid<Person> grid = new Grid<>(Person.class);
     DecimalFormat decimalFormat = new DecimalFormat(NUMBER_FORMAT_PATTERN);
     grid.removeAllColumns();
-    grid.addColumn(
+    Column<Person> firstNameColumn = grid.addColumn(
         LitRenderer.<Person>of("<b>${item.name}</b>").withProperty("name", Person::getName))
         .setHeader("Name");
-    grid.addColumn("lastName").setHeader("Last Name");
-    grid.addColumn(item -> Faker.instance().lorem().characters(30, 50)).setHeader("Big column");
+    Column<Person> lastNameColumn = grid.addColumn("lastName").setHeader("Last Name");
+    Column<Person> bigColumn =
+        grid.addColumn(item -> Faker.instance().lorem().characters(30, 50)).setHeader("Big column");
     Column<Person> budgetColumn = grid.addColumn(item -> decimalFormat.format(item.getBudget()))
         .setHeader("Budget").setTextAlign(ColumnTextAlign.END);
     List<Person> people = IntStream.range(0, 100).asLongStream().mapToObj(number -> {
@@ -78,12 +79,16 @@ public class GridExporterMultipleHeaderRowsDemo extends Div {
 
     grid.setItems(people);
     grid.setWidthFull();
-    this.setSizeFull();
+    setSizeFull();
+
+    HeaderRow joinedHeaderRow = grid.prependHeaderRow();
+    joinedHeaderRow.join(firstNameColumn, lastNameColumn).setText("Full name");
+    joinedHeaderRow.join(bigColumn, budgetColumn).setText("Big column and budget");
 
     HeaderRow firstExtraHeaderRow = grid.appendHeaderRow();
     HeaderRow secondExtraHeaderRow = grid.appendHeaderRow();
     for (Column<Person> column : grid.getColumns()) {
-      String columnHeader = grid.getHeaderRows().get(0).getCell(column).getText();
+      String columnHeader = grid.getHeaderRows().get(1).getCell(column).getText();
 
       HeaderCell firstHeaderCell = firstExtraHeaderRow.getCell(column);
       firstHeaderCell.setComponent(new Span(columnHeader + " 1"));
