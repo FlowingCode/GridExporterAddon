@@ -103,7 +103,7 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
       List<String> headerTexts = new ArrayList<>();
       List<HeaderRow> headerRows = grid.getHeaderRows();
       for (HeaderRow headerRow : headerRows) {
-          String headerText = renderCellTextContent(grid, column, GridExporter.COLUMN_HEADER, (col) -> {
+          String headerText = renderHeaderCellTextContent(grid, column, GridExporter.COLUMN_HEADER, (col) -> {
             String value = headerRow.getCell(col).getText();
             if (Strings.isBlank(value)) {
               Component component = headerRow.getCell(col).getComponent();
@@ -123,13 +123,49 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
         .map(
             column ->
                 new GridFooter<>(
-                    renderCellTextContent(grid, column, GridExporter.COLUMN_FOOTER, null),column
+                    renderFooterCellTextContent(grid, column, GridExporter.COLUMN_FOOTER, null),column
                     )
             )
         .collect(Collectors.toList());
   }
 
-  private String renderCellTextContent(Grid<T> grid, Column<T> column, String columnType, SerializableFunction<Column<T>,String> obtainCellFunction) {
+  private String renderHeaderCellTextContent(Grid<T> grid, Column<T> column, String columnType, 
+      SerializableFunction<Column<T>, String> obtainCellFunction) {
+    String headerOrFooter = (String) ComponentUtil.getData(column, columnType);
+    if (Strings.isBlank(headerOrFooter)) {
+      SerializableFunction<Column<?>, Component> getHeaderOrFooterComponent;
+      if (GridExporter.COLUMN_HEADER.equals(columnType)) {
+        getHeaderOrFooterComponent = Column::getHeaderComponent;
+        headerOrFooter = column.getHeaderText();
+      } else if (GridExporter.COLUMN_FOOTER.equals(columnType)) {
+        getHeaderOrFooterComponent = Column::getFooterComponent;
+        headerOrFooter = column.getFooterText();
+      } else {
+        throw new IllegalArgumentException();
+      }
+      if (Strings.isBlank(headerOrFooter)) {
+        try {
+          Component component;
+          if (obtainCellFunction != null) {
+            headerOrFooter = obtainCellFunction.apply(column);
+          } else {
+            component = getHeaderOrFooterComponent.apply(column);
+            if (component != null) {
+              headerOrFooter = component.getElement().getTextRecursively();
+            }
+          }
+        } catch (RuntimeException e) {
+          throw new IllegalStateException(
+              "Problem when trying to render header or footer cell text content", e);
+        }
+      }
+    }
+
+    return headerOrFooter == null ? "" : headerOrFooter;
+  }
+
+  private String renderFooterCellTextContent(Grid<T> grid, Column<T> column, String columnType, 
+      SerializableFunction<Column<T>, String> obtainCellFunction) {
     String headerOrFooter = (String) ComponentUtil.getData(column, columnType);
     if (Strings.isBlank(headerOrFooter)) {
       SerializableFunction<Column<?>, Component> getHeaderOrFooterComponent;
