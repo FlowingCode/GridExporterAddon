@@ -131,19 +131,12 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
 
   private String renderHeaderCellTextContent(Grid<T> grid, Column<T> column,
       SerializableFunction<Column<T>, String> obtainCellFunction) {
-    String columnType = GridExporter.COLUMN_HEADER;
-    String headerOrFooter = (String) ComponentUtil.getData(column, columnType);
+    String headerOrFooter = (String) ComponentUtil.getData(column, GridExporter.COLUMN_HEADER);
     if (Strings.isBlank(headerOrFooter)) {
       SerializableFunction<Column<?>, Component> getHeaderOrFooterComponent;
-      if (GridExporter.COLUMN_HEADER.equals(columnType)) {
-        getHeaderOrFooterComponent = Column::getHeaderComponent;
-        headerOrFooter = column.getHeaderText();
-      } else if (GridExporter.COLUMN_FOOTER.equals(columnType)) {
-        getHeaderOrFooterComponent = Column::getFooterComponent;
-        headerOrFooter = column.getFooterText();
-      } else {
-        throw new IllegalArgumentException();
-      }
+      getHeaderOrFooterComponent = Column::getHeaderComponent;
+      headerOrFooter = column.getHeaderText();
+
       if (Strings.isBlank(headerOrFooter)) {
         try {
           Component component;
@@ -167,19 +160,12 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
 
   private String renderFooterCellTextContent(Grid<T> grid, Column<T> column,
       SerializableFunction<Column<T>, String> obtainCellFunction) {
-    String columnType = GridExporter.COLUMN_FOOTER;
-    String headerOrFooter = (String) ComponentUtil.getData(column, columnType);
+    String headerOrFooter = (String) ComponentUtil.getData(column, GridExporter.COLUMN_FOOTER);
     if (Strings.isBlank(headerOrFooter)) {
       SerializableFunction<Column<?>, Component> getHeaderOrFooterComponent;
-      if (GridExporter.COLUMN_HEADER.equals(columnType)) {
-        getHeaderOrFooterComponent = Column::getHeaderComponent;
-        headerOrFooter = column.getHeaderText();
-      } else if (GridExporter.COLUMN_FOOTER.equals(columnType)) {
-        getHeaderOrFooterComponent = Column::getFooterComponent;
-        headerOrFooter = column.getFooterText();
-      } else {
-        throw new IllegalArgumentException();
-      }
+      getHeaderOrFooterComponent = Column::getFooterComponent;
+      headerOrFooter = column.getFooterText();
+
       if (Strings.isBlank(headerOrFooter)) {
         try {
           Component component;
