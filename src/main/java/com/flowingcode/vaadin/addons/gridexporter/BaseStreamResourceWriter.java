@@ -24,6 +24,7 @@ import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.grid.HeaderRow;
+import com.vaadin.flow.component.grid.HeaderRow.HeaderCell;
 import com.vaadin.flow.component.grid.dataview.GridLazyDataView;
 import com.vaadin.flow.data.provider.AbstractBackEndDataProvider;
 import com.vaadin.flow.data.provider.DataCommunicator;
@@ -103,16 +104,7 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
       List<String> headerTexts = new ArrayList<>();
       List<HeaderRow> headerRows = grid.getHeaderRows();
       for (HeaderRow headerRow : headerRows) {
-        String headerText = renderHeaderCellTextContent(grid, column, (col) -> {
-            String value = headerRow.getCell(col).getText();
-            if (Strings.isBlank(value)) {
-              Component component = headerRow.getCell(col).getComponent();
-              if (component != null) {
-                value = component.getElement().getTextRecursively();
-              }
-            }
-            return value;
-          });
+        String headerText = renderHeaderCellTextContent(grid, headerRow, column);
           headerTexts.add(headerText);
       }
       return new GridHeader<>(headerTexts, column);
@@ -129,20 +121,32 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
         .collect(Collectors.toList());
   }
 
-  private String renderHeaderCellTextContent(Grid<T> grid, Column<T> column,
-      SerializableFunction<Column<T>, String> obtainCellFunction) {
+  private String obtainCellFunction(HeaderCell headerCell, Column<T> column) {
+    String value = headerCell.getText();
+    if (Strings.isBlank(value)) {
+      Component component = headerCell.getComponent();
+      if (component != null) {
+        value = component.getElement().getTextRecursively();
+      }
+    }
+    return value;
+  }
+
+  private String renderHeaderCellTextContent(Grid<T> grid, HeaderRow headerRow, Column<T> column) {
     String header = (String) ComponentUtil.getData(column, GridExporter.COLUMN_HEADER);
+
     if (Strings.isBlank(header)) {
       header = column.getHeaderText();
 
       if (Strings.isBlank(header)) {
-        try {
-            header = obtainCellFunction.apply(column);
-        } catch (RuntimeException e) {
-          throw new IllegalStateException(
+      try {
+        HeaderCell headerCell = headerRow.getCell(column);
+        header = obtainCellFunction(headerCell, column);
+      } catch (RuntimeException e) {
+        throw new IllegalStateException(
               "Problem when trying to render header cell text content", e);
-        }
       }
+    }
     }
 
     return header == null ? "" : header;
@@ -160,7 +164,7 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
           Component component;
             component = footerComponent.apply(column);
           if (component != null) {
-              footer = component.getElement().getTextRecursively();
+            footer = component.getElement().getTextRecursively();
           }
         } catch (RuntimeException e) {
           throw new IllegalStateException(
