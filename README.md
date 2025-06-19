@@ -102,6 +102,81 @@ Custom templates can be added anywhere in the classpath (ie: src/main/resources)
 
 Apply [this fix](https://github.com/docker-library/openjdk/issues/73#issuecomment-451102068) as mentioned in #15 to avoid the "Cannot load from short array because "sun.awt.FontConfiguration.head" is null error.
 
+## Customizing Export Icon Tooltips
+
+The GridExporter addon allows you to customize the tooltip text displayed when a user hovers over the export icons (Excel, DOCX, PDF, CSV).
+
+You can set a default tooltip that applies to all export icons, or provide specific tooltips for individual icons.
+
+### Setting Tooltips
+
+1.  **Default Tooltip:**
+    Use the `setDefaultExportIconTooltip(String tooltipText)` method to set a common tooltip for all export icons. This tooltip will be used unless a more specific one is set for a particular icon.
+
+    ```java
+    GridExporter<Person> exporter = GridExporter.createFor(grid);
+    exporter.setDefaultExportIconTooltip("Export grid data");
+    ```
+
+2.  **Specific Tooltips:**
+    You can set a unique tooltip for each export format using dedicated methods:
+    *   `setExcelExportIconTooltip(String tooltipText)`
+    *   `setDocxExportIconTooltip(String tooltipText)`
+    *   `setPdfExportIconTooltip(String tooltipText)`
+    *   `setCsvExportIconTooltip(String tooltipText)`
+
+    A specific tooltip will always override the default tooltip for that particular icon.
+
+    ```java
+    // Specific tooltip for Excel, other icons (DOCX, PDF, CSV) will use the default if set.
+    exporter.setExcelExportIconTooltip("Export to Excel spreadsheet (.xlsx)");
+    ```
+
+### Behavior and Precedence
+
+*   A specific tooltip, when set for an icon (e.g., `setExcelExportIconTooltip("Specific")`), always takes precedence for that icon.
+*   When an icon's specific tooltip is not set or is `null`, the default tooltip (set by `setDefaultExportIconTooltip("Default")`) will be applied.
+*   Should neither a specific nor a default tooltip be configured for an icon (or if both are `null`), the icon will not display a tooltip (its `title` attribute will be removed).
+
+### Removing or Clearing Tooltips
+
+*   **Passing `null`**: If you pass `null` to a specific tooltip setter (e.g., `setExcelExportIconTooltip(null)`), that specific tooltip is removed. The icon will then attempt to use the default tooltip if one is set. If `null` is passed to `setDefaultExportIconTooltip(String)`, the default tooltip is removed. If an icon has no specific tooltip and the default is removed, it will have no tooltip.
+*   **Passing an Empty String `""`**: If you pass an empty string to any tooltip setter (e.g., `setExcelExportIconTooltip("")`), the icon will have an intentionally blank tooltip (the `title` attribute will be present but empty). This overrides any default tooltip for that specific icon.
+
+### Examples
+
+```java
+GridExporter<Person> exporter = GridExporter.createFor(grid);
+
+// Example 1: Set a default tooltip for all export icons
+exporter.setDefaultExportIconTooltip("Export grid data");
+// All icons will show "Export grid data"
+
+// Example 2: Set a specific tooltip for the Excel export icon
+// This will override the default for the Excel icon only.
+exporter.setExcelExportIconTooltip("Export to Excel spreadsheet (.xlsx)");
+// Excel icon: "Export to Excel spreadsheet (.xlsx)"
+// Other icons: "Export grid data"
+
+// Example 3: Set a specific tooltip for PDF and a default for others
+exporter.setDefaultExportIconTooltip("Download file");
+exporter.setPdfExportIconTooltip("Download as PDF document");
+// Excel, DOCX, CSV icons: "Download file"
+// PDF icon: "Download as PDF document"
+
+// Example 4: Clear specific tooltip for CSV; it falls back to default
+exporter.setDefaultExportIconTooltip("Default export tooltip");
+exporter.setExcelExportIconTooltip("Excel specific"); // Keep one specific for contrast
+exporter.setCsvExportIconTooltip(null);
+// CSV icon: "Default export tooltip"
+// Excel icon: "Excel specific"
+// Other icons (DOCX, PDF): "Default export tooltip"
+
+// Example 5: Intentionally blank tooltip for DOCX
+exporter.setDocxExportIconTooltip("");
+// DOCX icon: Will have a title attribute, but it will be empty.
+// Other icons: (Depends on default or other specific settings from previous examples)
+```
 
 ## Special configuration when using Spring
 
