@@ -221,9 +221,13 @@ public class GridExporter<T> implements Serializable {
     ValueProvider<T, String> customVP =
         (ValueProvider<T, String>)
             ComponentUtil.getData(column, GridExporter.COLUMN_VALUE_PROVIDER_DATA);
-    if (customVP != null) {
-      value = customVP.apply(item);
-    }
+	if (customVP != null) {
+		value = customVP.apply(item);
+		if (value == null && nullValueSupplier != null) {
+			value = nullValueSupplier.get();
+		}
+		return value;
+	}
 
     // if there is a key, assume that the property can be retrieved from it
     if (value == null && column.getKey() != null) {
