@@ -2,7 +2,7 @@
 
 ## Overview
 
-Starting with version 2.6.0, Grid Exporter Add-on introduces new `DownloadHandler`-based methods to replace the deprecated `StreamResource` methods. This migration is necessary for forward compatibility: as of Vaadin 25, `StreamResource` is deprecated and marked for removal, and it will be removed in a future Vaadin release.
+Starting with version 3.1.0, Grid Exporter Add-on introduces new `DownloadHandler`-based methods to replace the deprecated `StreamResource` methods. This migration is necessary for forward compatibility: as of Vaadin 25, `StreamResource` is deprecated and marked for removal, and it will be removed in a future Vaadin release.
 
 ## What's Changing?
 
@@ -138,8 +138,8 @@ All existing features continue to work with the new API:
 
 ## Timeline
 
-- **Version 2.6.0**: New `DownloadHandler` methods introduced, old methods deprecated
-- **Version 3.0.0**: Old `StreamResource` methods will be removed
+- **Version 3.1.0**: New `DownloadHandler` methods introduced, old methods deprecated
+- **A future release**: Old `StreamResource` methods will be removed
 
 ## Need Help?
 
@@ -150,7 +150,7 @@ If you encounter any issues during migration, please:
 
 ## Example: Complete Migration
 
-**Before (Version 2.5.x):**
+**Before (Version 3.0.x):**
 ```java
 Grid<Person> grid = new Grid<>(Person.class);
 grid.setItems(people);
@@ -159,7 +159,7 @@ GridExporter<Person> exporter = GridExporter.createFor(grid);
 // Auto-attached buttons use StreamResource internally
 ```
 
-**After (Version 2.6.0+):**
+**After (Version 3.1.0+):**
 ```java
 Grid<Person> grid = new Grid<>(Person.class);
 grid.setItems(people);
