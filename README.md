@@ -54,6 +54,34 @@ To see the demo, navigate to http://localhost:8080/
 
 See [here](https://github.com/FlowingCode/GridExporterAddon/releases)
 
+## Migration to DownloadHandler API (Version 2.6.0+)
+
+**Important for Vaadin 25 compatibility**: Starting with version 2.6.0, Grid Exporter Add-on introduces new `DownloadHandler`-based methods to replace the deprecated `StreamResource` methods.
+
+### Quick Migration
+
+**Old API (Deprecated):**
+```java
+exporter.getExcelStreamResource()
+exporter.getDocxStreamResource()
+exporter.getPdfStreamResource()
+exporter.getCsvStreamResource()
+```
+
+**New API (Recommended):**
+```java
+exporter.getExcelDownloadHandler()
+exporter.getDocxDownloadHandler()
+exporter.getPdfDownloadHandler()
+exporter.getCsvDownloadHandler()
+```
+
+### Requirements
+
+- **Vaadin 24.8.0 or later** is required to use the new `DownloadHandler` methods
+- Old `StreamResource` methods will continue to work until version 3.0.0
+- See [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) for detailed migration instructions
+
 ## Issue tracking
 
 The issues for this add-on are tracked on its github.com page. All bug reports and feature requests are appreciated. 
