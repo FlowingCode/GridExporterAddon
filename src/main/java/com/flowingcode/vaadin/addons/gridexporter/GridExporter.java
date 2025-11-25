@@ -42,6 +42,8 @@ import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.StreamResourceWriter;
 import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.server.streams.DownloadHandler;
+import com.vaadin.flow.server.streams.DownloadEvent;
 import com.vaadin.flow.shared.Registration;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -221,13 +223,13 @@ public class GridExporter<T> implements Serializable {
     ValueProvider<T, String> customVP =
         (ValueProvider<T, String>)
             ComponentUtil.getData(column, GridExporter.COLUMN_VALUE_PROVIDER_DATA);
-	if (customVP != null) {
-		value = customVP.apply(item);
-		if (value == null && nullValueSupplier != null) {
-			value = nullValueSupplier.get();
-		}
-		return value;
-	}
+    if (customVP != null) {
+      value = customVP.apply(item);
+      if (value == null && nullValueSupplier != null) {
+        value = nullValueSupplier.get();
+      }
+      return value;
+    }
 
     // if there is a key, assume that the property can be retrieved from it
     if (value == null && column.getKey() != null) {
@@ -305,40 +307,196 @@ public class GridExporter<T> implements Serializable {
     return value;
   }
 
+  /**
+   * Gets a StreamResource for DOCX export.
+   * 
+   * @return the DOCX StreamResource
+   * @deprecated Use {@link #getDocxDownloadHandler()} instead. This method will
+   *             be removed in
+   *             version 3.0.0.
+   */
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getDocxStreamResource() {
     return getDocxStreamResource(null);
   }
 
+  /**
+   * Gets a StreamResource for DOCX export with a custom template.
+   * 
+   * @param template the custom template path
+   * @return the DOCX StreamResource
+   * @deprecated Use {@link #getDocxDownloadHandler(String)} instead. This method
+   *             will be removed
+   *             in version 3.0.0.
+   */
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getDocxStreamResource(String template) {
     return new GridExporterStreamResource(getFileName("docx"),
         makeConcurrentWriter(new DocxStreamResourceWriter<>(this, template)));
   }
 
+  /**
+   * Gets a StreamResource for PDF export.
+   * 
+   * @return the PDF StreamResource
+   * @deprecated Use {@link #getPdfDownloadHandler()} instead. This method will be
+   *             removed in
+   *             version 3.0.0.
+   */
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getPdfStreamResource() {
     return getPdfStreamResource(null);
   }
 
+  /**
+   * Gets a StreamResource for PDF export with a custom template.
+   * 
+   * @param template the custom template path
+   * @return the PDF StreamResource
+   * @deprecated Use {@link #getPdfDownloadHandler(String)} instead. This method
+   *             will be removed in
+   *             version 3.0.0.
+   */
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getPdfStreamResource(String template) {
     return new GridExporterStreamResource(getFileName("pdf"),
         makeConcurrentWriter(new PdfStreamResourceWriter<>(this, template)));
   }
 
+  /**
+   * Gets a StreamResource for CSV export.
+   * 
+   * @return the CSV StreamResource
+   * @deprecated Use {@link #getCsvDownloadHandler()} instead. This method will be
+   *             removed in
+   *             version 3.0.0.
+   */
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public StreamResource getCsvStreamResource() {
     return new StreamResource(getFileName("csv"), new CsvStreamResourceWriter<>(this));
   }
 
+  /**
+   * Gets a StreamResource for Excel export.
+   * 
+   * @return the Excel StreamResource
+   * @deprecated Use {@link #getExcelDownloadHandler()} instead. This method will
+   *             be removed in
+   *             version 3.0.0.
+   */
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getExcelStreamResource() {
     return getExcelStreamResource(null);
   }
 
+  /**
+   * Gets a StreamResource for Excel export with a custom template.
+   * 
+   * @param template the custom template path
+   * @return the Excel StreamResource
+   * @deprecated Use {@link #getExcelDownloadHandler(String)} instead. This method
+   *             will be removed
+   *             in version 3.0.0.
+   */
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getExcelStreamResource(String template) {
     return new GridExporterStreamResource(getFileName("xlsx"),
         makeConcurrentWriter(new ExcelStreamResourceWriter<>(this, template)));
+  }
+  /**
+   * Gets a DownloadHandler for DOCX export.
+   * 
+   * @return the DOCX DownloadHandler
+   * @since 2.6.0
+   */
+  public DownloadHandler getDocxDownloadHandler() {
+    return getDocxDownloadHandler(null);
+  }
+
+  /**
+   * Gets a DownloadHandler for DOCX export with a custom template.
+   * 
+   * @param template the custom template path
+   * @return the DOCX DownloadHandler
+   * @since 2.6.0
+   */
+  public DownloadHandler getDocxDownloadHandler(String template) {
+    return makeConcurrentDownloadHandler(
+        new DocxStreamResourceWriter<>(this, template),
+        getFileName("docx"),
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+  }
+
+  /**
+   * Gets a DownloadHandler for PDF export.
+   * 
+   * @return the PDF DownloadHandler
+   * @since 2.6.0
+   */
+  public DownloadHandler getPdfDownloadHandler() {
+    return getPdfDownloadHandler(null);
+  }
+
+  /**
+   * Gets a DownloadHandler for PDF export with a custom template.
+   * 
+   * @param template the custom template path
+   * @return the PDF DownloadHandler
+   * @since 2.6.0
+   */
+  public DownloadHandler getPdfDownloadHandler(String template) {
+    return makeConcurrentDownloadHandler(
+        new PdfStreamResourceWriter<>(this, template),
+        getFileName("pdf"),
+        "application/pdf");
+  }
+
+  /**
+   * Gets a DownloadHandler for CSV export.
+   * 
+   * @return the CSV DownloadHandler
+   * @since 2.6.0
+   */
+  public DownloadHandler getCsvDownloadHandler() {
+    return new StreamResourceWriterAdapter(
+        new CsvStreamResourceWriter<>(this),
+        getFileName("csv"),
+        "text/csv");
+  }
+
+  /**
+   * Gets a DownloadHandler for Excel export.
+   * 
+   * @return the Excel DownloadHandler
+   * @since 2.6.0
+   */
+  public DownloadHandler getExcelDownloadHandler() {
+    return getExcelDownloadHandler(null);
+  }
+
+  /**
+   * Gets a DownloadHandler for Excel export with a custom template.
+   * 
+   * @param template the custom template path
+   * @return the Excel DownloadHandler
+   * @since 2.6.0
+   */
+  public DownloadHandler getExcelDownloadHandler(String template) {
+    return makeConcurrentDownloadHandler(
+        new ExcelStreamResourceWriter<>(this, template),
+        getFileName("xlsx"),
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   }
 
   private GridExporterConcurrentStreamResourceWriter makeConcurrentWriter(
       StreamResourceWriter writer) {
     return new GridExporterConcurrentStreamResourceWriter(writer);
+  }
+
+  private GridExporterConcurrentDownloadHandler makeConcurrentDownloadHandler(
+      StreamResourceWriter writer, String filename, String contentType) {
+    return new GridExporterConcurrentDownloadHandler(
+        new StreamResourceWriterAdapter(writer, filename, contentType));
   }
 
   public class GridExporterStreamResource extends StreamResource {
@@ -363,32 +521,32 @@ public class GridExporter<T> implements Serializable {
 
     private Component button;
 
-      @Override
-      public float getCost(VaadinSession session) {
-        return concurrentDownloadCost;
-      }
+    @Override
+    public float getCost(VaadinSession session) {
+      return concurrentDownloadCost;
+    }
 
-      @Override
-      public long getTimeout() {
+    @Override
+    public long getTimeout() {
         // It would have been possible to specify a different timeout for each instance but I cannot
         // figure out a good use case for that. The timeout returned herebecomes relevant when the
         // semaphore has been acquired by any other download, so the timeout must reflect how long
         // it is reasonable to wait for "any other download" to complete and release the semaphore.
-        //
+      //
         // Since the reasonable timeout would depend on the duration of "any other download", it
-        // makes sense that it's a global setting instead of a per-instance setting.
-        return GridExporterConcurrentSettings.getConcurrentDownloadTimeout(TimeUnit.NANOSECONDS);
-      }
+      // makes sense that it's a global setting instead of a per-instance setting.
+      return GridExporterConcurrentSettings.getConcurrentDownloadTimeout(TimeUnit.NANOSECONDS);
+    }
 
-      @Override
-      protected UI getUI() {
-        return grid.getUI().orElse(null);
-      }
+    @Override
+    protected UI getUI() {
+      return grid.getUI().orElse(null);
+    }
 
-      @Override
-      protected void onTimeout() {
-        fireConcurrentDownloadTimeout();
-      }
+    @Override
+    protected void onTimeout() {
+      fireConcurrentDownloadTimeout();
+    }
 
     @Override
     protected void onAccept() {
@@ -400,12 +558,78 @@ public class GridExporter<T> implements Serializable {
     @Override
     protected void onFinish() {
       setButtonEnabled(true);
-  }
+    }
 
     private void setButtonEnabled(boolean enabled) {
       if (button instanceof HasEnabled) {
         grid.getUI().ifPresent(ui -> ui.access(() -> ((HasEnabled) button).setEnabled(enabled)));
       }
+    }
+  }
+
+  /**
+   * Inner class that extends ConcurrentDownloadHandler for use with the new
+   * DownloadHandler API.
+   * This provides the same concurrent download control as
+   * GridExporterConcurrentStreamResourceWriter
+   * but for the new API.
+   */
+  private class GridExporterConcurrentDownloadHandler extends ConcurrentDownloadHandler {
+
+    GridExporterConcurrentDownloadHandler(DownloadHandler delegate) {
+      super(delegate);
+    }
+
+    private Component button;
+
+    @Override
+    public float getCost(VaadinSession session) {
+      return concurrentDownloadCost;
+    }
+
+    @Override
+    public long getTimeout() {
+      return GridExporterConcurrentSettings.getConcurrentDownloadTimeout(TimeUnit.NANOSECONDS);
+    }
+
+    @Override
+    protected UI getUI() {
+      return grid.getUI().orElse(null);
+    }
+
+    @Override
+    protected void onTimeout() {
+      fireConcurrentDownloadTimeout();
+    }
+
+    @Override
+    protected void onAccept() {
+      if (disableOnClick) {
+        setButtonEnabled(false);
+      }
+    }
+
+    @Override
+    protected void onFinish() {
+      setButtonEnabled(true);
+    }
+
+    private void setButtonEnabled(boolean enabled) {
+      if (button instanceof HasEnabled) {
+        grid.getUI().ifPresent(ui -> ui.access(() -> ((HasEnabled) button).setEnabled(enabled)));
+      }
+    }
+
+    /**
+     * Associates this download handler with a component (typically a button).
+     * This allows the handler to enable/disable the component during download.
+     *
+     * @param component the component to associate with this handler
+     * @return this handler for method chaining
+     */
+    public GridExporterConcurrentDownloadHandler forComponent(Component component) {
+      this.button = component;
+      return this;
     }
   }
 
