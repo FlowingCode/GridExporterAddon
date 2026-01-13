@@ -2,7 +2,7 @@
  * #%L
  * Grid Exporter Add-on
  * %%
- * Copyright (C) 2022 - 2024 Flowing Code
+ * Copyright (C) 2022 - 2026 Flowing Code
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 @SuppressWarnings("serial")
-@net.jcip.annotations.NotThreadSafe
 public class ConcurrentExportTests {
 
   private static final int TEST_TIMEOUT = 10000;
