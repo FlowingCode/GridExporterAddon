@@ -54,18 +54,18 @@ public class GridExporterCustomLinkDemo extends Div {
     total[0] = BigDecimal.ZERO;
     Stream<Person> stream =
         IntStream.range(0, 100)
-            .asLongStream()
-            .mapToObj(
-                number -> {
-                  Double budget = faker.number().randomDouble(2, 10000, 100000);
-                  total[0] = total[0].add(BigDecimal.valueOf(budget));
-                  c.setFooter("$" + total[0]);
-                  return new Person(
-                      faker.name().firstName(),
-                      faker.name().lastName(),
-                      faker.number().numberBetween(15, 50),
-                      budget);
-                });
+        .asLongStream()
+        .mapToObj(
+            number -> {
+              Double budget = faker.number().randomDouble(2, 10000, 100000);
+              total[0] = total[0].add(BigDecimal.valueOf(budget));
+              c.setFooter("$" + total[0]);
+              return new Person(
+                  faker.name().firstName(),
+                  faker.name().lastName(),
+                  faker.number().numberBetween(15, 50),
+                  budget);
+            });
     grid.setItems(DataProvider.fromStream(stream));
     grid.setWidthFull();
     this.setSizeFull();
@@ -76,7 +76,7 @@ public class GridExporterCustomLinkDemo extends Div {
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
     Anchor excelLink = new Anchor("", "Export to Excel");
-    excelLink.setHref(exporter.getExcelStreamResource());
+    excelLink.setHref(exporter.getExcelDownloadHandler());
     excelLink.getElement().setAttribute("download", true);
     add(grid, excelLink);
   }
