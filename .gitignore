@@ -4,6 +4,8 @@ target
 .settings
 .project
 .classpath
+.eclipse
+.vaadin
 webpack.generated.js
 package-lock.json
 package.json
