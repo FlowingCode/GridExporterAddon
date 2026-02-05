@@ -18,6 +18,7 @@
 		<drivers.dir>${project.basedir}/drivers</drivers.dir>
         <jetty.version>10.0.13</jetty.version>
 		<poi.version>5.2.3</poi.version>
+        <flowingcode.commons.demo.version>3.6.0</flowingcode.commons.demo.version>
 	</properties>
 
 	<organization>
@@ -58,11 +59,7 @@
 				<scope>import</scope>
 				<version>${vaadin.version}</version>
 			</dependency>
-            <dependency>
-            	<groupId>com.flowingcode.vaadin.addons.demo</groupId>
-            	<artifactId>commons-demo</artifactId>
-            	<version>3.6.0</version>
-            </dependency>
+
 		</dependencies>
 	</dependencyManagement>
 
@@ -191,6 +188,7 @@
         <dependency>
 			<groupId>com.flowingcode.vaadin.addons.demo</groupId>
 			<artifactId>commons-demo</artifactId>
+			<version>${flowingcode.commons.demo.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
