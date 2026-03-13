@@ -21,3 +21,5 @@ src/main/dev-bundle/*
 /.flow-node-tasks.lock
 /vite.config.ts
 /vite.generated.ts
+src/main/frontend/generated/
+src/main/frontend/index.html
