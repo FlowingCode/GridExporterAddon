@@ -13,6 +13,13 @@ This is an addon that allows to export Vaadin's grid data to some formats like E
 * Other templates can be used besides the basic templates
 * Optionally can create the export buttons automatically (default)
 
+## Supported versions
+
+| Vaadin Version | Add-on Version |
+|---|---|
+| 24-25 | 3.x |
+| 23 | 1.x |
+
 ## Online demo
 
 [Online demo here](https://addonsv24.flowingcode.com/gridexporter)
