@@ -263,10 +263,11 @@ public class ConcurrentExportTests {
           thread.start();
         }
 
-        try {
-          latch.await(1, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-          sneakyThrow(e);
+        // Spin until the thread is either blocked at tryAcquire (TIMED_WAITING,
+        // meaning the UI has already been captured) or has already finished
+        // (latch counted down after accept() returned or threw).
+        while (latch.getCount() > 0 && thread.getState() != Thread.State.TIMED_WAITING) {
+          Thread.onSpinWait();
         }
 
         return this;
