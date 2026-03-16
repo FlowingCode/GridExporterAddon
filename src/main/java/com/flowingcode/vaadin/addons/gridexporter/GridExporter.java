@@ -125,6 +125,8 @@ public class GridExporter<T> implements Serializable {
 
   boolean autoMergeTitle = true;
 
+  int headerRowIndex = -1;
+
   SerializableSupplier<String> nullValueSupplier;
 
   /** @deprecated. This attribute is incremented only when exporting DOCX, but it's never reset. */
@@ -582,6 +584,21 @@ public class GridExporter<T> implements Serializable {
    */
   public void setAutoMergeTitle(boolean autoMergeTitle) {
     this.autoMergeTitle = autoMergeTitle;
+  }
+
+  public int getHeaderRowIndex() {
+    return headerRowIndex;
+  }
+
+  /**
+   * Configures the header row that will be used for exporting when the format only supports one
+   * header row (like CSV or DOCX). A value of -1 (the default) indicates that all header rows
+   * should be exported if supported by the format, otherwise the first row is used.
+   *
+   * @param headerRowIndex
+   */
+  public void setHeaderRowIndex(int headerRowIndex) {
+    this.headerRowIndex = headerRowIndex;
   }
 
   public boolean isExcelExportEnabled() {

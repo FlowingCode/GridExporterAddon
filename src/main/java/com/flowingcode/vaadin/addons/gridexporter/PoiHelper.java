@@ -25,8 +25,12 @@ import java.math.BigInteger;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
+import org.apache.poi.xwpf.usermodel.XWPFTableRow;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTHMerge;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblGridCol;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblWidth;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTcPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STMerge;
 
 /**
  * Class for adding support for older versions of Apache POI by using reflection
@@ -205,5 +209,30 @@ public class PoiHelper {
               XWPF_TABLE_CELL_CLASS_NAME),
           e);
     }
+  }
+
+  public static void mergeCellsHorizontal(XWPFTableRow row, int fromCol, int toCol) {
+      for (int cellIndex = fromCol; cellIndex <= toCol; cellIndex++) {
+          XWPFTableCell cell = row.getCell(cellIndex);
+          if (cellIndex == fromCol) {
+              // The first merged cell is "restart", which serves as the "master" cell
+              getOrCreateHMerge(cell).setVal(STMerge.RESTART);
+          } else {
+              // Further cells in the merge are "continue"
+              getOrCreateHMerge(cell).setVal(STMerge.CONTINUE);
+          }
+      }
+  }
+
+  private static CTHMerge getOrCreateHMerge(XWPFTableCell cell) {
+      CTTcPr tcPr = cell.getCTTc().getTcPr();
+      if (tcPr == null) {
+          tcPr = cell.getCTTc().addNewTcPr();
+      }
+      CTHMerge hMerge = tcPr.getHMerge();
+      if (hMerge == null) {
+          hMerge = tcPr.addNewHMerge();
+      }
+      return hMerge;
   }
 }

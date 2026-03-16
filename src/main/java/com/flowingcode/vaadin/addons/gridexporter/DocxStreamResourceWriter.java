@@ -22,6 +22,8 @@ package com.flowingcode.vaadin.addons.gridexporter;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.component.grid.HeaderRow;
+import com.vaadin.flow.component.grid.HeaderRow.HeaderCell;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.server.VaadinSession;
 import java.io.IOException;
@@ -127,10 +129,11 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
                   cctblgridcol, "" + Math.round(9638 / exporter.getColumns().size()));
             });
 
-    List<GridHeader<T>> headers = getGridHeaders(grid);
+    boolean allRows = exporter.getHeaderRowIndex() < 0;
+    List<GridHeader<T>> headers = getGridHeaders(grid, allRows);
     XWPFTableCell cell = findCellWithPlaceHolder(table, exporter.headersPlaceHolder);
     if (cell != null) {
-      fillHeaderOrFooter(table, cell, headers, true, exporter.headersPlaceHolder);
+      fillHeaderRows(table, cell, headers, exporter.headersPlaceHolder, allRows);
     }
 
     cell = findCellWithPlaceHolder(table, exporter.dataPlaceHolder);
@@ -139,9 +142,112 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     cell = findCellWithPlaceHolder(table, exporter.footersPlaceHolder);
     List<GridFooter<T>> footers = getGridFooters(grid);
     if (cell != null) {
-      fillHeaderOrFooter(table, cell, footers, false, exporter.footersPlaceHolder);
+      fillFooterRows(table, cell, footers, exporter.footersPlaceHolder);
     }
     return doc;
+  }
+
+  private void fillHeaderRows(XWPFTable table, XWPFTableCell headersPlaceholderCell,
+      List<GridHeader<T>> allHeaders, String placeHolder, boolean allRows) {
+    CTTcPr tcPr = headersPlaceholderCell.getCTTc().getTcPr();
+    CTPPr ctpPr = headersPlaceholderCell.getParagraphs().iterator().next().getCTP().getPPr();
+    CTRPr ctrPr = headersPlaceholderCell.getParagraphs().iterator().next().getRuns().isEmpty() ? null : headersPlaceholderCell.getParagraphs().iterator().next().getRuns().iterator().next().getCTR().getRPr();
+
+    XWPFTableRow placeholderRow = headersPlaceholderCell.getTableRow();
+    int startRow = table.getRows().indexOf(placeholderRow);
+    int startColumn = placeholderRow.getTableCells().indexOf(headersPlaceholderCell);
+
+    Grid<T> grid = exporter.getGrid();
+    List<HeaderRow> gridHeaderRows = grid.getHeaderRows();
+    int headerRowsCount = allRows ? gridHeaderRows.size() : 1;
+
+    // Shift rows down to make space for all header rows, if necessary
+    for (int r = 0; r < headerRowsCount - 1; r++) {
+        table.createRow();
+    }
+    for (int r = table.getNumberOfRows() - 1; r > startRow + (headerRowsCount - 1); r--) {
+        table.getCTTbl().setTrArray(r, table.getCTTbl().getTrArray(r - (headerRowsCount - 1)));
+    }
+
+    for (int i = 0; i < headerRowsCount; i++) {
+        int gridRowIndex = allRows ? i : exporter.getHeaderRowIndex();
+        if (gridRowIndex < 0) gridRowIndex = 0;
+        HeaderRow hr = gridHeaderRows.get(gridRowIndex);
+        XWPFTableRow row = table.getRow(startRow + i);
+        if (row == null) {
+            row = table.insertNewTableRow(startRow + i);
+        }
+        
+        // Remove existing cells from the template row if it's the first header row we are writing
+        while (row.getTableCells().size() > startColumn) {
+            row.removeCell(row.getTableCells().size() - 1);
+        }
+
+        for (int j = 0; j < allHeaders.size(); j++) {
+            GridHeader<T> gh = allHeaders.get(j);
+            Column<T> column = gh.getColumn();
+            HeaderCell hc = hr.getCell(column);
+
+            boolean isFirst = true;
+            int colSpan = 1;
+            for (int k = j - 1; k >= 0; k--) {
+                if (hr.getCell(allHeaders.get(k).getColumn()) == hc) {
+                    isFirst = false;
+                    break;
+                }
+            }
+
+            if (isFirst) {
+                for (int k = j + 1; k < allHeaders.size(); k++) {
+                    if (hr.getCell(allHeaders.get(k).getColumn()) == hc) {
+                        colSpan++;
+                    } else {
+                        break;
+                    }
+                }
+
+                XWPFTableCell currentCell = row.createCell();
+                currentCell.getCTTc().setTcPr(tcPr);
+                PoiHelper.setWidth(currentCell, "" + Math.round(9638 / exporter.getColumns().size() * colSpan));
+                
+                String headerText = gh.getTexts().get(allRows ? i : 0);
+                setCellValue(headerText, currentCell, placeHolder, ctpPr, ctrPr);
+                setCellAlignment(currentCell, column.getTextAlign());
+                
+                if (colSpan > 1) {
+                    // XWPF merging is done via CTHMerge
+                    for (int k = 1; k < colSpan; k++) {
+                        row.createCell().getCTTc().setTcPr(tcPr);
+                    }
+                    PoiHelper.mergeCellsHorizontal(row, j, j + colSpan - 1);
+                }
+            }
+        }
+    }
+  }
+
+  private void fillFooterRows(XWPFTable table, XWPFTableCell footersPlaceholderCell,
+      List<GridFooter<T>> footers, String placeHolder) {
+    CTTcPr tcPr = footersPlaceholderCell.getCTTc().getTcPr();
+    CTPPr ctpPr = footersPlaceholderCell.getParagraphs().iterator().next().getCTP().getPPr();
+    CTRPr ctrPr = footersPlaceholderCell.getParagraphs().iterator().next().getRuns().isEmpty() ? null : footersPlaceholderCell.getParagraphs().iterator().next().getRuns().iterator().next().getCTR().getRPr();
+
+    XWPFTableRow tableRow = footersPlaceholderCell.getTableRow();
+    int startColumn = tableRow.getTableCells().indexOf(footersPlaceholderCell);
+    
+    // Clear existing cells from placeholder onwards
+    while (tableRow.getTableCells().size() > startColumn) {
+        tableRow.removeCell(tableRow.getTableCells().size() - 1);
+    }
+
+    footers.forEach(
+        footer -> {
+          XWPFTableCell currentCell = tableRow.createCell();
+          currentCell.getCTTc().setTcPr(tcPr);
+          PoiHelper.setWidth(currentCell, "" + Math.round(9638 / exporter.getColumns().size()));
+          setCellValue(footer.getText(), currentCell, placeHolder, ctpPr, ctrPr);
+          setCellAlignment(currentCell, footer.getColumn().getTextAlign());
+        });
   }
 
   private void fillData(XWPFTable table, XWPFTableCell dataCell, DataProvider<T, ?> dataProvider) {
@@ -213,6 +319,12 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
                       .iterator()
                       .next()
                       .getRuns()
+                      .isEmpty() ? null :
+                  templateCell
+                      .getParagraphs()
+                      .iterator()
+                      .next()
+                      .getRuns()
                       .iterator()
                       .next()
                       .getCTR()
@@ -257,7 +369,7 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
           .forEach(
               run -> {
                 String text = run.getText(0);
-                if (text.indexOf(placeHolderToReplace) > 0) {
+                if (text != null && text.contains(placeHolderToReplace)) {
                   text = text.replace(placeHolderToReplace, value);
                 } else {
                   text = value;
@@ -266,43 +378,6 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
               });
     }
     p.setStyle("TextBody");
-  }
-
-  private void fillHeaderOrFooter(
-      XWPFTable table,
-      XWPFTableCell cell,
-      List<? extends GridHeaderOrFooter<T>> headers,
-      boolean createColumns,
-      String placeHolder) {
-    boolean[] firstHeader = new boolean[] {true};
-    XWPFTableRow tableRow = cell.getTableRow();
-    headers.forEach(
-        header -> {
-          if (!firstHeader[0]) {
-            XWPFTableCell currentCell = tableRow.addNewTableCell();
-            currentCell.getCTTc().setTcPr(cell.getCTTc().getTcPr());
-            PoiHelper.setWidth(currentCell, "" + Math.round(9638 / exporter.getColumns().size()));
-            setCellValue(
-                header.getText(),
-                currentCell,
-                placeHolder,
-                cell.getParagraphs().iterator().next().getCTP().getPPr(),
-                cell.getParagraphs()
-                    .iterator()
-                    .next()
-                    .getRuns()
-                    .iterator()
-                    .next()
-                    .getCTR()
-                    .getRPr());
-            setCellAlignment(currentCell, header.getColumn().getTextAlign());
-          } else {
-            setCellValue(header.getText(), cell, placeHolder);
-            setCellAlignment(cell, header.getColumn().getTextAlign());
-            PoiHelper.setWidth(cell, "" + Math.round(9638 / exporter.getColumns().size()));
-            firstHeader[0] = false;
-          }
-        });
   }
 
   private void setCellAlignment(XWPFTableCell currentCell, ColumnTextAlign right) {
@@ -349,10 +424,10 @@ class DocxStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
                   .forEach(
                       row -> {
                         XWPFTableCell cell = row.getCell(0);
-                        if (cell.getText().equals(exporter.headersPlaceHolder)) {
+                        if (cell != null && cell.getText().equals(exporter.headersPlaceHolder)) {
                           foundHeaders[0] = true;
                         }
-                        if (cell.getText().equals(exporter.dataPlaceHolder)) {
+                        if (cell != null && cell.getText().equals(exporter.dataPlaceHolder)) {
                           foundData[0] = true;
                         }
                       });
