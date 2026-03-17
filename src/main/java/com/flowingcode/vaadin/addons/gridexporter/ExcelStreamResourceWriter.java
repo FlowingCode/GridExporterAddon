@@ -24,6 +24,8 @@ import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.component.grid.HeaderRow;
+import com.vaadin.flow.component.grid.HeaderRow.HeaderCell;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.server.VaadinSession;
@@ -88,49 +90,56 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
       Sheet sheet = wb.getSheetAt(exporter.sheetNumber);
 
       Cell titleCell = findCellWithPlaceHolder(sheet, exporter.titlePlaceHolder);
+      Cell headersPlaceholderCell = findCellWithPlaceHolder(sheet, exporter.headersPlaceHolder);
+
       if (titleCell != null) {
         titleCell.setCellValue(exporter.title);
       }
 
-      Cell cell = findCellWithPlaceHolder(sheet, exporter.headersPlaceHolder);
-      List<GridHeader<T>> headers = getGridHeaders(grid);
+      boolean allRows = exporter.getHeaderRowIndex() < 0;
+      List<GridHeader<T>> headers = getGridHeaders(grid, allRows);
 
-      fillHeaderOrFooter(sheet, cell, headers, true);
-      if (exporter.autoMergeTitle && titleCell != null && exporter.getColumns().size()>1) {
-        sheet.addMergedRegion(new CellRangeAddress(titleCell.getRowIndex(), titleCell.getRowIndex(),
-            titleCell.getColumnIndex(), titleCell.getColumnIndex() + headers.size() - 1));
+      int headerRowsCount = allRows ? grid.getHeaderRows().size() : 1;
+
+      if (headersPlaceholderCell != null) {
+          fillHeaderRows(sheet, headersPlaceholderCell, headers, headerRowsCount, allRows);
       }
 
-      cell = findCellWithPlaceHolder(sheet, exporter.dataPlaceHolder);
-      int[] dataStartingColumn = new int[1];
-      dataStartingColumn[0] = cell.getColumnIndex();
+      if (exporter.autoMergeTitle && titleCell != null && exporter.getColumns().size()>1) {
+        sheet.addMergedRegion(new CellRangeAddress(titleCell.getRowIndex(), titleCell.getRowIndex(),
+            titleCell.getColumnIndex(), titleCell.getColumnIndex() + exporter.getColumns().size() - 1));
+      }
 
-      // initialize the data range with tne coordinates of tha data placeholder cell
-      CellRangeAddress dataRange = new CellRangeAddress(cell.getRowIndex(), cell.getRowIndex(),
-          cell.getColumnIndex(), cell.getColumnIndex());
+      // Re-find data placeholder because it might have been shifted by fillHeaderRows
+      Cell dataPlaceholderCell = findCellWithPlaceHolder(sheet, exporter.dataPlaceHolder);
+      
+      int dataStartingRow = dataPlaceholderCell != null ? dataPlaceholderCell.getRowIndex() : 0;
+      int dataStartingColumn = dataPlaceholderCell != null ? dataPlaceholderCell.getColumnIndex() : 0;
+
+      CellRangeAddress dataRange = new CellRangeAddress(dataStartingRow, dataStartingRow,
+          dataStartingColumn, dataStartingColumn);
 
       Sheet tempSheet = wb.cloneSheet(exporter.sheetNumber);
 
       int lastRow =
-          fillData(sheet, cell, grid.getDataProvider(), dataRange, titleCell != null);
+          fillData(sheet, dataPlaceholderCell, grid.getDataProvider(), dataRange, titleCell != null);
 
       applyConditionalFormattings(sheet, dataRange);
 
-      copyBottomOfSheetStartingOnRow(wb, tempSheet, sheet, cell.getRowIndex() + 1, lastRow);
+      copyBottomOfSheetStartingOnRow(wb, tempSheet, sheet, dataStartingRow + 1, lastRow);
 
       wb.removeSheetAt(exporter.sheetNumber + 1);
 
-      cell = findCellWithPlaceHolder(sheet, exporter.footersPlaceHolder);
-      List<GridFooter<T>> footers = getGridFooters(grid);
-      if (cell != null) {
-        fillFooter(sheet, cell, footers, false);
+      Cell footersPlaceholderCell = findCellWithPlaceHolder(sheet, exporter.footersPlaceHolder);
+      if (footersPlaceholderCell != null) {
+        List<GridFooter<T>> footers = getGridFooters(grid);
+        fillFooter(sheet, footersPlaceholderCell, footers, false);
       }
 
       if (exporter.isAutoSizeColumns()) {
-        exporter.getColumns().forEach(column -> {
-          sheet.autoSizeColumn(dataStartingColumn[0]);
-          dataStartingColumn[0]++;
-        });
+        for (int i = 0; i < exporter.getColumns().size(); i++) {
+           sheet.autoSizeColumn(dataStartingColumn + i);
+        }
       }
 
       exporter.additionalPlaceHolders.entrySet().forEach(entry -> {
@@ -422,45 +431,112 @@ class ExcelStreamResourceWriter<T> extends BaseStreamResourceWriter<T> {
     return null;
   }
 
-  private void fillFooter(Sheet sheet, Cell headersOrFootersCell,
-      List<GridFooter<T>> headersOrFooters, boolean isHeader) {
-    fillHeaderOrFooter(sheet, headersOrFootersCell, headersOrFooters, isHeader);
+  private boolean hasCustomHeaders(Grid<T> grid) {
+    return grid.getColumns().stream()
+        .anyMatch(column -> ComponentUtil.getData(column, GridExporter.COLUMN_HEADER) != null);
   }
-  private void fillHeaderOrFooter(Sheet sheet, Cell headersOrFootersCell,
-      List<? extends GridHeaderOrFooter<T>> headersOrFooters, boolean isHeader) {
-    CellStyle style = headersOrFootersCell.getCellStyle();
 
-    int startRow = headersOrFootersCell.getRowIndex();
-    int currentColumn = headersOrFootersCell.getColumnIndex();
-    boolean shiftFirstTime = true;
-    for (GridHeaderOrFooter<T> headerOrFooter : headersOrFooters) {
-      List<String> headerOrFooterTexts = headerOrFooter.getTexts();
-      Column<T> column = headerOrFooter.getColumn();
-      if (!isHeader) {
-        ComponentUtil.setData(column, COLUMN_CELLSTYLE_MAP, null);
-      }
-      if (shiftFirstTime) {
-        if (headerOrFooterTexts.size()>1) {
-          sheet.shiftRows(startRow, sheet.getLastRowNum(), headerOrFooterTexts.size()-1);
+  private void fillHeaderRows(Sheet sheet, Cell headersPlaceholderCell,
+      List<GridHeader<T>> allHeaders, int headerRowsCount, boolean allRows) {
+    CellStyle style = headersPlaceholderCell.getCellStyle();
+    int startRow = headersPlaceholderCell.getRowIndex();
+    int startColumn = headersPlaceholderCell.getColumnIndex();
+    Grid<T> grid = exporter.getGrid();
+    List<HeaderRow> gridHeaderRows = grid.getHeaderRows();
+
+    // Clear existing merged regions in the header area to prevent conflicts
+    for (int i = sheet.getNumMergedRegions() - 1; i >= 0; i--) {
+        CellRangeAddress mergedRegion = sheet.getMergedRegion(i);
+        if (mergedRegion.getFirstRow() >= startRow && mergedRegion.getLastRow() < startRow + headerRowsCount) {
+            sheet.removeMergedRegion(i);
         }
-        shiftFirstTime = false;
-      }
-      for (int i = 0; i < headerOrFooterTexts.size(); i++) {
+    }
+
+    // Shift rows down to make space for all header rows, if necessary
+    if (headerRowsCount > 1) {
+        sheet.shiftRows(startRow, sheet.getLastRowNum(), headerRowsCount - 1);
+    }
+
+    for (int i = 0; i < headerRowsCount; i++) {
+        int gridRowIndex = allRows ? i : exporter.getHeaderRowIndex();
+        if (gridRowIndex < 0) gridRowIndex = 0;
+        HeaderRow hr = gridHeaderRows.get(gridRowIndex);
         Row row = sheet.getRow(startRow + i);
         if (row == null) {
-          row = sheet.createRow(startRow + i);
+            row = sheet.createRow(startRow + i);
         }
-        Cell cell = row.getCell(currentColumn);
-        if (cell == null) {
-          cell = row.createCell(currentColumn);
+
+        for (int j = 0; j < allHeaders.size(); j++) {
+            GridHeader<T> gh = allHeaders.get(j);
+            Column<T> column = gh.getColumn();
+            HeaderCell hc = hr.getCell(column);
+
+            // Check if this is the first column of a merged cell
+            boolean isFirst = true;
+            int colSpan = 1;
+            for (int k = j - 1; k >= 0; k--) {
+                if (hr.getCell(allHeaders.get(k).getColumn()) == hc) {
+                    isFirst = false;
+                    break;
+                }
+            }
+
+            if (isFirst) {
+                // Calculate span
+                for (int k = j + 1; k < allHeaders.size(); k++) {
+                    if (hr.getCell(allHeaders.get(k).getColumn()) == hc) {
+                        colSpan++;
+                    } else {
+                        break;
+                    }
+                }
+
+                // Create all cells in the span and apply style
+                for (int k = j; k < j + colSpan; k++) {
+                    Cell c = row.getCell(startColumn + k);
+                    if (c == null) c = row.createCell(startColumn + k);
+                    c.setCellStyle(style);
+                }
+
+                Cell cell = row.getCell(startColumn + j);
+                String headerText = renderHeaderCellTextContent(grid, hr, column);
+                cell.setCellValue(headerText);
+                
+                if (colSpan > 1) {
+                    sheet.addMergedRegion(new CellRangeAddress(startRow + i, startRow + i, startColumn + j, startColumn + j + colSpan - 1));
+                }
+                configureAlignment(column, cell, ExcelCellType.HEADER);
+            }
         }
-        cell.setCellStyle(style);
-        Object value =
-            (isHeader ? headerOrFooterTexts.get(i) : transformToType(headerOrFooterTexts.get(i), column));
-        buildCell(value, cell, column, null);
-        configureAlignment(column, cell, isHeader ? ExcelCellType.HEADER : ExcelCellType.FOOTER);
-      }
-      currentColumn++;
     }
-}
+  }
+
+  private void fillFooter(Sheet sheet, Cell headersOrFootersCell,
+      List<GridFooter<T>> footers, boolean isHeader) {
+    fillFooterRows(sheet, headersOrFootersCell, footers);
+  }
+
+  private void fillFooterRows(Sheet sheet, Cell footersPlaceholderCell,
+      List<GridFooter<T>> allFooters) {
+    CellStyle style = footersPlaceholderCell.getCellStyle();
+    int startRow = footersPlaceholderCell.getRowIndex();
+    int startColumn = footersPlaceholderCell.getColumnIndex();
+
+    for (GridFooter<T> footer : allFooters) {
+      Row row = sheet.getRow(startRow);
+      if (row == null) {
+        row = sheet.createRow(startRow);
+      }
+      Cell cell = row.getCell(startColumn);
+      if (cell == null) {
+        cell = row.createCell(startColumn);
+      }
+      cell.setCellStyle(style);
+      Object value = transformToType(footer.getText(), footer.getColumn());
+      buildCell(value, cell, footer.getColumn(), null);
+      configureAlignment(footer.getColumn(), cell, ExcelCellType.FOOTER);
+      startColumn++;
+    }
+  }
+
 }
