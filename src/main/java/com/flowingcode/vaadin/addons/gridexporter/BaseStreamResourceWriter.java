@@ -95,20 +95,38 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
   }
 
   protected List<GridHeader<T>> getGridHeaders(Grid<T> grid) {
+    return getGridHeaders(grid, false);
+  }
+
+  protected List<GridHeader<T>> getGridHeaders(Grid<T> grid, boolean allRows) {
     return exporter.getColumnsOrdered().stream()
-        .map(column -> getGridHeader(grid, column))
+        .map(column -> getGridHeader(grid, column, allRows))
         .collect(Collectors.toList());
   }
 
-  private GridHeader<T> getGridHeader(Grid<T> grid, Column<T> column) {
-      List<String> headerTexts = new ArrayList<>();
-      List<HeaderRow> headerRows = grid.getHeaderRows();
+  private GridHeader<T> getGridHeader(Grid<T> grid, Column<T> column, boolean allRows) {
+    List<String> headerTexts = new ArrayList<>();
+    List<HeaderRow> headerRows = grid.getHeaderRows();
+
+    if (allRows) {
       for (HeaderRow headerRow : headerRows) {
         String headerText = renderHeaderCellTextContent(grid, headerRow, column);
+        headerTexts.add(headerText);
+      }
+    } else {
+      int index = exporter.getHeaderRowIndex();
+      if (index < 0) {
+          index = 0; // Default to first row if none selected or all rows requested but not supported
+      }
+      if (index < headerRows.size()) {
+          HeaderRow headerRow = headerRows.get(index);
+          String headerText = renderHeaderCellTextContent(grid, headerRow, column);
           headerTexts.add(headerText);
       }
-      return new GridHeader<>(headerTexts, column);
+    }
+    return new GridHeader<>(headerTexts, column);
   }
+
 
   protected List<GridFooter<T>> getGridFooters(Grid<T> grid) {
     return exporter.getColumnsOrdered().stream()
@@ -132,14 +150,23 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
     return value;
   }
 
-  private String renderHeaderCellTextContent(Grid<T> grid, HeaderRow headerRow, Column<T> column) {
+  protected String renderHeaderCellTextContent(Grid<T> grid, HeaderRow headerRow, Column<T> column) {
     String header = (String) ComponentUtil.getData(column, GridExporter.COLUMN_HEADER);
 
     if (Strings.isBlank(header)) {
       HeaderCell headerCell = headerRow.getCell(column);
+
+      // Check if this column is the first visible column of a merged cell
       int columnIndex = grid.getColumns().indexOf(column);
-      if (columnIndex == 0
-          || headerRow.getCell(grid.getColumns().get(columnIndex - 1)) != headerCell) {
+      boolean isFirstVisibleColumnInMergedCell = true;
+      if (columnIndex > 0) {
+        Column<T> previousColumn = grid.getColumns().get(columnIndex - 1);
+        if (isExportable(previousColumn) && headerRow.getCell(previousColumn) == headerCell) {
+          isFirstVisibleColumnInMergedCell = false;
+        }
+      }
+
+      if (isFirstVisibleColumnInMergedCell) {
         try {
           header = obtainCellFunction(headerCell, column);
         } catch (RuntimeException e) {
@@ -148,7 +175,6 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
         }
       }
     }
-
     return header == null ? "" : header;
   }
 

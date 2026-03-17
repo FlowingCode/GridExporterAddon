@@ -14,7 +14,7 @@ final class GridHeader<T> implements GridHeaderOrFooter<T> {
 
   @Override
   public String getText() {
-    return texts.get(0);
+    return texts.isEmpty() ? "" : texts.get(0);
   }
 
 }
