@@ -150,10 +150,16 @@
 		    <version>11.5.0</version>
 		</dependency>
 		<dependency>
-		    <groupId>org.docx4j</groupId>
-		    <artifactId>docx4j-JAXB-MOXy</artifactId>
-		    <version>11.5.0</version>
-		</dependency>
+	    <groupId>org.docx4j</groupId>
+	    <artifactId>docx4j-JAXB-MOXy</artifactId>
+	    <version>11.5.0</version>
+	    <exclusions>
+	        <exclusion>
+	            <groupId>com.sun.xml.bind</groupId>
+	            <artifactId>jaxb-core</artifactId>
+	        </exclusion>
+	    </exclusions>
+	</dependency>
 		<dependency>
 		    <groupId>org.docx4j</groupId>
 		    <artifactId>docx4j-export-fo</artifactId>
