@@ -34,7 +34,10 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.streams.DownloadHandler;
+import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -42,6 +45,8 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.apache.poi.EncryptedDocumentException;
 
 @DemoSource
@@ -98,9 +103,37 @@ public class GridExporterDemo extends Div {
     shareSelect.setItems("Whatsapp", "Facebook", "X (Twitter)");
     shareSelect.setWidth("120px");
     
+    DownloadHandler zipHandler = event -> {
+      String base = exporter.getFileName();
+      event.setFileName(base + ".zip");
+      event.setContentType("application/zip");
+      try (ZipOutputStream zos = new ZipOutputStream(event.getOutputStream())) {
+        // Inner writers may close their wrapper streams; shield the ZipOutputStream from that
+        // while still flushing any pending writes.
+        OutputStream nonClosing = new FilterOutputStream(zos) {
+          @Override
+          public void close() throws IOException {
+            flush();
+          }
+        };
+        zos.putNextEntry(new ZipEntry(base + ".xlsx"));
+        new ExcelStreamResourceWriter<>(exporter, null).accept(nonClosing, event.getSession());
+        zos.closeEntry();
+        zos.putNextEntry(new ZipEntry(base + ".docx"));
+        new DocxStreamResourceWriter<>(exporter, null).accept(nonClosing, event.getSession());
+        zos.closeEntry();
+        zos.putNextEntry(new ZipEntry(base + ".pdf"));
+        new PdfStreamResourceWriter<>(exporter, null).accept(nonClosing, event.getSession());
+        zos.closeEntry();
+        zos.putNextEntry(new ZipEntry(base + ".csv"));
+        new CsvStreamResourceWriter<>(exporter).accept(nonClosing, event.getSession());
+        zos.closeEntry();
+      }
+    };
+
     Anchor zipLink = new Anchor("", FontAwesome.Regular.FILE_ZIPPER.create());
+    zipLink.setHref(zipHandler);
     zipLink.setTitle("Download zip file");
-    zipLink.getElement().setAttribute("download", true);
 
     exporter.setFooterToolbarItems(
         List.of(new FooterToolbarItem(zipLink, FooterToolbarItemPosition.EXPORT_BUTTON),
