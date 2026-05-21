@@ -279,6 +279,14 @@ public class ConcurrentExportTests {
           thread.start();
         }
         latch.await();
+        // Spin until the thread reaches barrier.await() (WAITING state).
+        // latch.countDown() happens before barrier.await(), so there is a window
+        // where latch==0 but the thread hasn't entered the barrier yet.
+        // Assumes the barrier has not fired yet; otherwise WAITING could mean
+        // exchanger.exchange() rather than barrier.await().
+        while (thread.isAlive() && thread.getState() != Thread.State.WAITING) {
+          Thread.onSpinWait();
+        }
         return this;
       }
 
