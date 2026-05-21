@@ -30,6 +30,7 @@ import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.PageTitle;
@@ -89,6 +90,12 @@ public class GridExporterDemo extends Div {
     exporter.setFileName(
         "GridExport" + new SimpleDateFormat("yyyyddMM").format(Calendar.getInstance().getTime()));
     exporter.setCsvCharset(() -> StandardCharsets.UTF_8);
+
+    exporter.setExcelExportTooltipText("Download as Excel spreadsheet");
+    exporter.setCsvExportTooltipConfigurator(
+        tooltip -> tooltip.setPosition(Tooltip.TooltipPosition.TOP));
+
+    exporter.setPdfExportTooltipText(null);    
 
     TextField filterField = new TextField();
     filterField.setPlaceholder("Filter by");
