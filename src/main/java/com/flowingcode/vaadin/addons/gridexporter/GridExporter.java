@@ -30,6 +30,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.data.binder.BeanPropertySet;
 import com.vaadin.flow.data.binder.PropertyDefinition;
 import com.vaadin.flow.data.binder.PropertySet;
@@ -137,6 +138,16 @@ public class GridExporter<T> implements Serializable {
 
   private SerializableSupplier<Charset> csvCharset;
 
+  private String excelExportTooltipText = "Export to Excel";
+  private String docxExportTooltipText = "Export to Word";
+  private String pdfExportTooltipText = "Export to PDF";
+  private String csvExportTooltipText = "Export to CSV";
+
+  private SerializableConsumer<Tooltip> excelExportTooltipConfigurator;
+  private SerializableConsumer<Tooltip> docxExportTooltipConfigurator;
+  private SerializableConsumer<Tooltip> pdfExportTooltipConfigurator;
+  private SerializableConsumer<Tooltip> csvExportTooltipConfigurator;
+
   private GridExporter(Grid<T> grid) {
     this.grid = grid;
   }
@@ -160,6 +171,8 @@ public class GridExporter<T> implements Serializable {
                       .setHref(exporter.getExcelStreamResource(excelCustomTemplate)
                           .forComponent(excelLink));
                   excelLink.getElement().setAttribute("download", true);
+                  applyExportTooltip(excelLink, exporter.excelExportTooltipText,
+                      exporter.excelExportTooltipConfigurator);
                   footerToolbar.add(
                       new FooterToolbarItem(excelLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
@@ -168,6 +181,8 @@ public class GridExporter<T> implements Serializable {
                   docLink.setHref(
                       exporter.getDocxStreamResource(docxCustomTemplate).forComponent(docLink));
                   docLink.getElement().setAttribute("download", true);
+                  applyExportTooltip(docLink, exporter.docxExportTooltipText,
+                      exporter.docxExportTooltipConfigurator);
                   footerToolbar
                       .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
@@ -176,6 +191,8 @@ public class GridExporter<T> implements Serializable {
                   docLink.setHref(
                       exporter.getPdfStreamResource(docxCustomTemplate).forComponent(docLink));
                   docLink.getElement().setAttribute("download", true);
+                  applyExportTooltip(docLink, exporter.pdfExportTooltipText,
+                      exporter.pdfExportTooltipConfigurator);
                   footerToolbar
                       .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
@@ -183,6 +200,8 @@ public class GridExporter<T> implements Serializable {
                   Anchor csvLink = new Anchor("", FontAwesome.Regular.FILE_LINES.create());
                   csvLink.setHref(exporter.getCsvStreamResource());
                   csvLink.getElement().setAttribute("download", true);
+                  applyExportTooltip(csvLink, exporter.csvExportTooltipText,
+                      exporter.csvExportTooltipConfigurator);
                   footerToolbar
                       .add(new FooterToolbarItem(csvLink, FooterToolbarItemPosition.EXPORT_BUTTON));
                 }
@@ -212,6 +231,91 @@ public class GridExporter<T> implements Serializable {
 
   public void setButtonsAlignment(ButtonsAlignment buttonsAlignment) {
     this.buttonsAlignment = buttonsAlignment;
+  }
+
+  private static void applyExportTooltip(Component component, String text,
+      SerializableConsumer<Tooltip> configurator) {
+    if (text == null) {
+      return;
+    }
+    Tooltip tooltip = Tooltip.forComponent(component);
+    tooltip.setText(text);
+    if (configurator != null) {
+      configurator.accept(tooltip);
+    }
+  }
+
+  /**
+   * Sets the tooltip text shown on the auto-attached Excel export icon. Pass {@code null} to
+   * disable the tooltip. Must be called before the grid is attached.
+   */
+  public void setExcelExportTooltipText(String text) {
+    this.excelExportTooltipText = text;
+  }
+
+  /**
+   * Sets the tooltip text shown on the auto-attached Word export icon. Pass {@code null} to disable
+   * the tooltip. Must be called before the grid is attached.
+   */
+  public void setDocxExportTooltipText(String text) {
+    this.docxExportTooltipText = text;
+  }
+
+  /**
+   * Sets the tooltip text shown on the auto-attached PDF export icon. Pass {@code null} to disable
+   * the tooltip. Must be called before the grid is attached.
+   */
+  public void setPdfExportTooltipText(String text) {
+    this.pdfExportTooltipText = text;
+  }
+
+  /**
+   * Sets the tooltip text shown on the auto-attached CSV export icon. Pass {@code null} to disable
+   * the tooltip. Must be called before the grid is attached.
+   */
+  public void setCsvExportTooltipText(String text) {
+    this.csvExportTooltipText = text;
+  }
+
+  /**
+   * Registers a configurator invoked at attach time with the {@link Tooltip} instance bound to the
+   * Excel export icon. Allows further customization (position, opening delay, etc.). The
+   * configurator runs after the text setter, so calling {@code tooltip.setText(...)} inside it
+   * overrides the value provided to {@link #setExcelExportTooltipText(String)}. Not invoked if
+   * the tooltip has been disabled via {@code setExcelExportTooltipText(null)}.
+   */
+  public void setExcelExportTooltipConfigurator(SerializableConsumer<Tooltip> configurator) {
+    this.excelExportTooltipConfigurator = configurator;
+  }
+
+  /**
+   * Registers a configurator invoked at attach time with the {@link Tooltip} instance bound to the
+   * Word export icon. The configurator runs after the text setter, so calling
+   * {@code tooltip.setText(...)} inside it overrides {@link #setDocxExportTooltipText(String)}. Not
+   * invoked if the tooltip has been disabled via {@code setDocxExportTooltipText(null)}.
+   */
+  public void setDocxExportTooltipConfigurator(SerializableConsumer<Tooltip> configurator) {
+    this.docxExportTooltipConfigurator = configurator;
+  }
+
+  /**
+   * Registers a configurator invoked at attach time with the {@link Tooltip} instance bound to the
+   * PDF export icon. The configurator runs after the text setter, so calling
+   * {@code tooltip.setText(...)} inside it overrides {@link #setPdfExportTooltipText(String)}. Not
+   * invoked if the tooltip has been disabled via {@code setPdfExportTooltipText(null)}.
+   */
+  public void setPdfExportTooltipConfigurator(SerializableConsumer<Tooltip> configurator) {
+    this.pdfExportTooltipConfigurator = configurator;
+  }
+
+  /**
+   * Registers a configurator invoked at attach time with the {@link Tooltip} instance bound to the
+   * CSV export icon. The configurator runs after the text setter, so calling
+   * {@code tooltip.setText(...)} inside it overrides {@link #setCsvExportTooltipText(String)}. Not
+   * invoked if the tooltip has been disabled via {@code setCsvExportTooltipText(null)}.
+   */
+  public void setCsvExportTooltipConfigurator(SerializableConsumer<Tooltip> configurator) {
+    this.csvExportTooltipConfigurator = configurator;
   }
 
   Object extractValueFromColumn(T item, Column<T> column) {
