@@ -40,6 +40,7 @@ public class GridExporterDemoView extends TabbedDemo {
     addDemo(GridExporterHierarchicalDataDemo.class);
     addDemo(GridExporterBigDatasetDemo.class);
     addDemo(GridExporterMultipleHeaderRowsDemo.class);
+    addDemo(GridExporterJoinedHeadersWithCustomHeaderDemo.class);
     setSizeFull();
   }
 }
