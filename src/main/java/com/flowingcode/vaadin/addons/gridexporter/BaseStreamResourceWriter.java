@@ -103,9 +103,11 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
   private GridHeader<T> getGridHeader(Grid<T> grid, Column<T> column) {
       List<String> headerTexts = new ArrayList<>();
       List<HeaderRow> headerRows = grid.getHeaderRows();
-      for (HeaderRow headerRow : headerRows) {
-        String headerText = renderHeaderCellTextContent(grid, headerRow, column);
-          headerTexts.add(headerText);
+      int lastIndex = headerRows.size() - 1;
+      for (int i = 0; i < headerRows.size(); i++) {
+        boolean isLastRow = (i == lastIndex);
+        String headerText = renderHeaderCellTextContent(grid, headerRows.get(i), column, isLastRow);
+        headerTexts.add(headerText);
       }
       return new GridHeader<>(headerTexts, column);
   }
@@ -132,8 +134,11 @@ abstract class BaseStreamResourceWriter<T> implements StreamResourceWriter {
     return value;
   }
 
-  private String renderHeaderCellTextContent(Grid<T> grid, HeaderRow headerRow, Column<T> column) {
-    String header = (String) ComponentUtil.getData(column, GridExporter.COLUMN_HEADER);
+  private String renderHeaderCellTextContent(Grid<T> grid, HeaderRow headerRow, Column<T> column,
+      boolean isLastRow) {
+    String header = isLastRow
+        ? (String) ComponentUtil.getData(column, GridExporter.COLUMN_HEADER)
+        : null;
 
     if (Strings.isBlank(header)) {
       HeaderCell headerCell = headerRow.getCell(column);
