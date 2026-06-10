@@ -200,7 +200,7 @@ public class GridExporter<T> implements Serializable {
                 }
                 if (exporter.isCsvExportEnabled()) {
                   Anchor csvLink = new Anchor("", FontAwesome.Regular.FILE_LINES.create());
-                  csvLink.setHref(exporter.getCsvDownloadHandler().forComponent(csvLink));
+                  csvLink.setHref(exporter.getCsvDownloadHandler());
                   csvLink.getElement().setAttribute("download", true);
                   applyExportTooltip(csvLink, exporter.csvExportTooltipText,
                       exporter.csvExportTooltipConfigurator);
@@ -554,8 +554,8 @@ public class GridExporter<T> implements Serializable {
    * @return the CSV DownloadHandler
    * @since 3.1.0
    */
-  public GridExporterConcurrentDownloadHandler getCsvDownloadHandler() {
-    return makeConcurrentDownloadHandler(
+  public DownloadHandler getCsvDownloadHandler() {
+    return new StreamResourceWriterAdapter(
         new CsvStreamResourceWriter<>(this),
         getFileName("csv"),
         "text/csv");
