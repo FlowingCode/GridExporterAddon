@@ -415,10 +415,11 @@ public class GridExporter<T> implements Serializable {
    * Gets a StreamResource for DOCX export.
    * 
    * @return the DOCX StreamResource
-   * @deprecated Use {@link #getDocxDownloadHandler()} instead. This method will be removed in a
-   *             future release.
+   * @deprecated Use {@link #getDocxDownloadHandler()} instead. This method will
+   *             be removed in
+   *             version 3.0.0.
    */
-  @Deprecated(since = "3.1.0", forRemoval = true)
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getDocxStreamResource() {
     return getDocxStreamResource(null);
   }
@@ -428,10 +429,11 @@ public class GridExporter<T> implements Serializable {
    * 
    * @param template the custom template path
    * @return the DOCX StreamResource
-   * @deprecated Use {@link #getDocxDownloadHandler(String)} instead. This method will be removed
-   *             in a future release.
+   * @deprecated Use {@link #getDocxDownloadHandler(String)} instead. This method
+   *             will be removed
+   *             in version 3.0.0.
    */
-  @Deprecated(since = "3.1.0", forRemoval = true)
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getDocxStreamResource(String template) {
     return new GridExporterStreamResource(getFileName("docx"),
         makeConcurrentWriter(new DocxStreamResourceWriter<>(this, template)));
@@ -441,10 +443,11 @@ public class GridExporter<T> implements Serializable {
    * Gets a StreamResource for PDF export.
    * 
    * @return the PDF StreamResource
-   * @deprecated Use {@link #getPdfDownloadHandler()} instead. This method will be removed in a
-   *             future release.
+   * @deprecated Use {@link #getPdfDownloadHandler()} instead. This method will be
+   *             removed in
+   *             version 3.0.0.
    */
-  @Deprecated(since = "3.1.0", forRemoval = true)
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getPdfStreamResource() {
     return getPdfStreamResource(null);
   }
@@ -454,10 +457,11 @@ public class GridExporter<T> implements Serializable {
    * 
    * @param template the custom template path
    * @return the PDF StreamResource
-   * @deprecated Use {@link #getPdfDownloadHandler(String)} instead. This method will be removed
-   *             in a future release.
+   * @deprecated Use {@link #getPdfDownloadHandler(String)} instead. This method
+   *             will be removed in
+   *             version 3.0.0.
    */
-  @Deprecated(since = "3.1.0", forRemoval = true)
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getPdfStreamResource(String template) {
     return new GridExporterStreamResource(getFileName("pdf"),
         makeConcurrentWriter(new PdfStreamResourceWriter<>(this, template)));
@@ -467,10 +471,11 @@ public class GridExporter<T> implements Serializable {
    * Gets a StreamResource for CSV export.
    * 
    * @return the CSV StreamResource
-   * @deprecated Use {@link #getCsvDownloadHandler()} instead. This method will be removed in a
-   *             future release.
+   * @deprecated Use {@link #getCsvDownloadHandler()} instead. This method will be
+   *             removed in
+   *             version 3.0.0.
    */
-  @Deprecated(since = "3.1.0", forRemoval = true)
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public StreamResource getCsvStreamResource() {
     return new StreamResource(getFileName("csv"), new CsvStreamResourceWriter<>(this));
   }
@@ -479,10 +484,11 @@ public class GridExporter<T> implements Serializable {
    * Gets a StreamResource for Excel export.
    * 
    * @return the Excel StreamResource
-   * @deprecated Use {@link #getExcelDownloadHandler()} instead. This method will be removed in a
-   *             future release.
+   * @deprecated Use {@link #getExcelDownloadHandler()} instead. This method will
+   *             be removed in
+   *             version 3.0.0.
    */
-  @Deprecated(since = "3.1.0", forRemoval = true)
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getExcelStreamResource() {
     return getExcelStreamResource(null);
   }
@@ -492,10 +498,11 @@ public class GridExporter<T> implements Serializable {
    * 
    * @param template the custom template path
    * @return the Excel StreamResource
-   * @deprecated Use {@link #getExcelDownloadHandler(String)} instead. This method will be removed
-   *             in a future release.
+   * @deprecated Use {@link #getExcelDownloadHandler(String)} instead. This method
+   *             will be removed
+   *             in version 3.0.0.
    */
-  @Deprecated(since = "3.1.0", forRemoval = true)
+  @Deprecated(since = "2.6.0", forRemoval = true)
   public GridExporterStreamResource getExcelStreamResource(String template) {
     return new GridExporterStreamResource(getFileName("xlsx"),
         makeConcurrentWriter(new ExcelStreamResourceWriter<>(this, template)));
@@ -504,7 +511,7 @@ public class GridExporter<T> implements Serializable {
    * Gets a DownloadHandler for DOCX export.
    * 
    * @return the DOCX DownloadHandler
-   * @since 3.1.0
+   * @since 2.6.0
    */
   public GridExporterConcurrentDownloadHandler getDocxDownloadHandler() {
     return getDocxDownloadHandler(null);
@@ -515,7 +522,7 @@ public class GridExporter<T> implements Serializable {
    * 
    * @param template the custom template path
    * @return the DOCX DownloadHandler
-   * @since 3.1.0
+   * @since 2.6.0
    */
   public GridExporterConcurrentDownloadHandler getDocxDownloadHandler(String template) {
     return makeConcurrentDownloadHandler(
@@ -528,7 +535,7 @@ public class GridExporter<T> implements Serializable {
    * Gets a DownloadHandler for PDF export.
    * 
    * @return the PDF DownloadHandler
-   * @since 3.1.0
+   * @since 2.6.0
    */
   public GridExporterConcurrentDownloadHandler getPdfDownloadHandler() {
     return getPdfDownloadHandler(null);
@@ -539,7 +546,7 @@ public class GridExporter<T> implements Serializable {
    * 
    * @param template the custom template path
    * @return the PDF DownloadHandler
-   * @since 3.1.0
+   * @since 2.6.0
    */
   public GridExporterConcurrentDownloadHandler getPdfDownloadHandler(String template) {
     return makeConcurrentDownloadHandler(
@@ -552,7 +559,7 @@ public class GridExporter<T> implements Serializable {
    * Gets a DownloadHandler for CSV export.
    * 
    * @return the CSV DownloadHandler
-   * @since 3.1.0
+   * @since 2.6.0
    */
   public GridExporterConcurrentDownloadHandler getCsvDownloadHandler() {
     return makeConcurrentDownloadHandler(
@@ -565,7 +572,7 @@ public class GridExporter<T> implements Serializable {
    * Gets a DownloadHandler for Excel export.
    * 
    * @return the Excel DownloadHandler
-   * @since 3.1.0
+   * @since 2.6.0
    */
   public GridExporterConcurrentDownloadHandler getExcelDownloadHandler() {
     return getExcelDownloadHandler(null);
@@ -576,7 +583,7 @@ public class GridExporter<T> implements Serializable {
    * 
    * @param template the custom template path
    * @return the Excel DownloadHandler
-   * @since 3.1.0
+   * @since 2.6.0
    */
   public GridExporterConcurrentDownloadHandler getExcelDownloadHandler(String template) {
     return makeConcurrentDownloadHandler(
