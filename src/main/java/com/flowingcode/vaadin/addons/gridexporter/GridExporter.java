@@ -72,11 +72,16 @@ public class GridExporter<T> implements Serializable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GridExporter.class);
 
-  private boolean excelExportEnabled = true;
-  private boolean docxExportEnabled = true;
-  private boolean pdfExportEnabled = true;
-  private boolean csvExportEnabled = true;
   private boolean autoSizeColumns = true;
+
+  /** Templates configured through {@link #createFor(Grid, String, String)}. */
+  private String excelCustomTemplate;
+  private String docxCustomTemplate;
+
+  private final ExcelFormatExporter excel = new ExcelFormatExporter();
+  private final DocxFormatExporter docx = new DocxFormatExporter();
+  private final PdfFormatExporter pdf = new PdfFormatExporter();
+  private final CsvFormatExporter csv = new CsvFormatExporter();
 
   /** Represents all the permits available to the semaphore. */
   public static final float MAX_COST = ConcurrentStreamResourceWriter.MAX_COST;
@@ -140,16 +145,6 @@ public class GridExporter<T> implements Serializable {
 
   private SerializableSupplier<Charset> csvCharset;
 
-  private String excelExportTooltipText = "Export to Excel";
-  private String docxExportTooltipText = "Export to Word";
-  private String pdfExportTooltipText = "Export to PDF";
-  private String csvExportTooltipText = "Export to CSV";
-
-  private SerializableConsumer<Tooltip> excelExportTooltipConfigurator;
-  private SerializableConsumer<Tooltip> docxExportTooltipConfigurator;
-  private SerializableConsumer<Tooltip> pdfExportTooltipConfigurator;
-  private SerializableConsumer<Tooltip> csvExportTooltipConfigurator;
-
   private GridExporter(Grid<T> grid) {
     this.grid = grid;
   }
@@ -161,51 +156,18 @@ public class GridExporter<T> implements Serializable {
   public static <T> GridExporter<T> createFor(
       Grid<T> grid, String excelCustomTemplate, String docxCustomTemplate) {
     GridExporter<T> exporter = new GridExporter<>(grid);
+    exporter.excelCustomTemplate = excelCustomTemplate;
+    exporter.docxCustomTemplate = docxCustomTemplate;
     grid.getElement()
         .addAttachListener(
             ev -> {
               FooterToolbar footerToolbar = new FooterToolbar();
 
               if (exporter.autoAttachExportButtons) {
-                if (exporter.isExcelExportEnabled()) {
-                  Anchor excelLink = new Anchor("", FontAwesome.Regular.FILE_EXCEL.create());
-                  excelLink
-                      .setHref(exporter.getExcelDownloadHandler(excelCustomTemplate)
-                          .forComponent(excelLink));
-                  excelLink.getElement().setAttribute("download", true);
-                  applyExportTooltip(excelLink, exporter.excelExportTooltipText,
-                      exporter.excelExportTooltipConfigurator);
-                  footerToolbar.add(
-                      new FooterToolbarItem(excelLink, FooterToolbarItemPosition.EXPORT_BUTTON));
-                }
-                if (exporter.isDocxExportEnabled()) {
-                  Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_WORD.create());
-                  docLink.setHref(
-                      exporter.getDocxDownloadHandler(docxCustomTemplate).forComponent(docLink));
-                  docLink.getElement().setAttribute("download", true);
-                  applyExportTooltip(docLink, exporter.docxExportTooltipText,
-                      exporter.docxExportTooltipConfigurator);
-                  footerToolbar
-                      .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
-                }
-                if (exporter.isPdfExportEnabled()) {
-                  Anchor docLink = new Anchor("", FontAwesome.Regular.FILE_PDF.create());
-                  docLink.setHref(
-                      exporter.getPdfDownloadHandler(docxCustomTemplate).forComponent(docLink));
-                  docLink.getElement().setAttribute("download", true);
-                  applyExportTooltip(docLink, exporter.pdfExportTooltipText,
-                      exporter.pdfExportTooltipConfigurator);
-                  footerToolbar
-                      .add(new FooterToolbarItem(docLink, FooterToolbarItemPosition.EXPORT_BUTTON));
-                }
-                if (exporter.isCsvExportEnabled()) {
-                  Anchor csvLink = new Anchor("", FontAwesome.Regular.FILE_LINES.create());
-                  csvLink.setHref(exporter.getCsvDownloadHandler());
-                  csvLink.getElement().setAttribute("download", true);
-                  applyExportTooltip(csvLink, exporter.csvExportTooltipText,
-                      exporter.csvExportTooltipConfigurator);
-                  footerToolbar
-                      .add(new FooterToolbarItem(csvLink, FooterToolbarItemPosition.EXPORT_BUTTON));
+                for (GridExporter<T>.FormatExporter formatExporter : exporter.getFormatExporters()) {
+                  if (formatExporter.enabled) {
+                    exporter.addExportButton(footerToolbar, formatExporter);
+                  }
                 }
               }
 
@@ -219,6 +181,25 @@ public class GridExporter<T> implements Serializable {
               }
             });
     return exporter;
+  }
+
+  /**
+   * Returns the per-format exporters in the order their buttons are attached to the footer.
+   */
+  private List<FormatExporter> getFormatExporters() {
+    return List.of(excel, docx, pdf, csv);
+  }
+
+  /**
+   * Creates and adds a footer export button (an {@link Anchor} with the format's icon, download
+   * handler and tooltip) for the given format exporter.
+   */
+  private void addExportButton(FooterToolbar footerToolbar, FormatExporter formatExporter) {
+    Anchor link = new Anchor("", formatExporter.createIcon());
+    link.setHref(formatExporter.createFooterDownloadHandler(link));
+    link.getElement().setAttribute("download", true);
+    applyExportTooltip(link, formatExporter.tooltipText, formatExporter.tooltipConfigurator);
+    footerToolbar.add(new FooterToolbarItem(link, FooterToolbarItemPosition.EXPORT_BUTTON));
   }
 
   private JustifyContentMode getJustifyContentMode() {
@@ -252,7 +233,7 @@ public class GridExporter<T> implements Serializable {
    * disable the tooltip. Must be called before the grid is attached.
    */
   public void setExcelExportTooltipText(String text) {
-    this.excelExportTooltipText = text;
+    excel.tooltipText = text;
   }
 
   /**
@@ -260,7 +241,7 @@ public class GridExporter<T> implements Serializable {
    * the tooltip. Must be called before the grid is attached.
    */
   public void setDocxExportTooltipText(String text) {
-    this.docxExportTooltipText = text;
+    docx.tooltipText = text;
   }
 
   /**
@@ -268,7 +249,7 @@ public class GridExporter<T> implements Serializable {
    * the tooltip. Must be called before the grid is attached.
    */
   public void setPdfExportTooltipText(String text) {
-    this.pdfExportTooltipText = text;
+    pdf.tooltipText = text;
   }
 
   /**
@@ -276,7 +257,7 @@ public class GridExporter<T> implements Serializable {
    * the tooltip. Must be called before the grid is attached.
    */
   public void setCsvExportTooltipText(String text) {
-    this.csvExportTooltipText = text;
+    csv.tooltipText = text;
   }
 
   /**
@@ -287,7 +268,7 @@ public class GridExporter<T> implements Serializable {
    * the tooltip has been disabled via {@code setExcelExportTooltipText(null)}.
    */
   public void setExcelExportTooltipConfigurator(SerializableConsumer<Tooltip> configurator) {
-    this.excelExportTooltipConfigurator = configurator;
+    excel.tooltipConfigurator = configurator;
   }
 
   /**
@@ -297,7 +278,7 @@ public class GridExporter<T> implements Serializable {
    * invoked if the tooltip has been disabled via {@code setDocxExportTooltipText(null)}.
    */
   public void setDocxExportTooltipConfigurator(SerializableConsumer<Tooltip> configurator) {
-    this.docxExportTooltipConfigurator = configurator;
+    docx.tooltipConfigurator = configurator;
   }
 
   /**
@@ -307,7 +288,7 @@ public class GridExporter<T> implements Serializable {
    * invoked if the tooltip has been disabled via {@code setPdfExportTooltipText(null)}.
    */
   public void setPdfExportTooltipConfigurator(SerializableConsumer<Tooltip> configurator) {
-    this.pdfExportTooltipConfigurator = configurator;
+    pdf.tooltipConfigurator = configurator;
   }
 
   /**
@@ -317,7 +298,7 @@ public class GridExporter<T> implements Serializable {
    * invoked if the tooltip has been disabled via {@code setCsvExportTooltipText(null)}.
    */
   public void setCsvExportTooltipConfigurator(SerializableConsumer<Tooltip> configurator) {
-    this.csvExportTooltipConfigurator = configurator;
+    csv.tooltipConfigurator = configurator;
   }
 
   Object extractValueFromColumn(T item, Column<T> column) {
@@ -433,8 +414,7 @@ public class GridExporter<T> implements Serializable {
    */
   @Deprecated(since = "3.1.0", forRemoval = true)
   public GridExporterStreamResource getDocxStreamResource(String template) {
-    return new GridExporterStreamResource(getFileName("docx"),
-        makeConcurrentWriter(new DocxStreamResourceWriter<>(this, template)));
+    return docx.getStreamResource(template);
   }
 
   /**
@@ -459,8 +439,7 @@ public class GridExporter<T> implements Serializable {
    */
   @Deprecated(since = "3.1.0", forRemoval = true)
   public GridExporterStreamResource getPdfStreamResource(String template) {
-    return new GridExporterStreamResource(getFileName("pdf"),
-        makeConcurrentWriter(new PdfStreamResourceWriter<>(this, template)));
+    return pdf.getStreamResource(template);
   }
 
   /**
@@ -472,7 +451,7 @@ public class GridExporter<T> implements Serializable {
    */
   @Deprecated(since = "3.1.0", forRemoval = true)
   public StreamResource getCsvStreamResource() {
-    return new StreamResource(getFileName("csv"), new CsvStreamResourceWriter<>(this));
+    return csv.getStreamResource(null);
   }
 
   /**
@@ -497,8 +476,7 @@ public class GridExporter<T> implements Serializable {
    */
   @Deprecated(since = "3.1.0", forRemoval = true)
   public GridExporterStreamResource getExcelStreamResource(String template) {
-    return new GridExporterStreamResource(getFileName("xlsx"),
-        makeConcurrentWriter(new ExcelStreamResourceWriter<>(this, template)));
+    return excel.getStreamResource(template);
   }
   /**
    * Gets a DownloadHandler for DOCX export.
@@ -518,10 +496,7 @@ public class GridExporter<T> implements Serializable {
    * @since 3.1.0
    */
   public GridExporterConcurrentDownloadHandler getDocxDownloadHandler(String template) {
-    return makeConcurrentDownloadHandler(
-        new DocxStreamResourceWriter<>(this, template),
-        getFileName("docx"),
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    return docx.getDownloadHandler(template);
   }
 
   /**
@@ -542,10 +517,7 @@ public class GridExporter<T> implements Serializable {
    * @since 3.1.0
    */
   public GridExporterConcurrentDownloadHandler getPdfDownloadHandler(String template) {
-    return makeConcurrentDownloadHandler(
-        new PdfStreamResourceWriter<>(this, template),
-        getFileName("pdf"),
-        "application/pdf");
+    return pdf.getDownloadHandler(template);
   }
 
   /**
@@ -555,10 +527,7 @@ public class GridExporter<T> implements Serializable {
    * @since 3.1.0
    */
   public DownloadHandler getCsvDownloadHandler() {
-    return new StreamResourceWriterAdapter(
-        new CsvStreamResourceWriter<>(this),
-        getFileName("csv"),
-        "text/csv");
+    return csv.getDownloadHandler(null);
   }
 
   /**
@@ -579,10 +548,7 @@ public class GridExporter<T> implements Serializable {
    * @since 3.1.0
    */
   public GridExporterConcurrentDownloadHandler getExcelDownloadHandler(String template) {
-    return makeConcurrentDownloadHandler(
-        new ExcelStreamResourceWriter<>(this, template),
-        getFileName("xlsx"),
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    return excel.getDownloadHandler(template);
   }
 
   private GridExporterConcurrentStreamResourceWriter makeConcurrentWriter(
@@ -905,35 +871,35 @@ public class GridExporter<T> implements Serializable {
   }
 
   public boolean isExcelExportEnabled() {
-    return excelExportEnabled;
+    return excel.enabled;
   }
 
   public void setExcelExportEnabled(boolean excelExportEnabled) {
-    this.excelExportEnabled = excelExportEnabled;
+    excel.enabled = excelExportEnabled;
   }
 
   public boolean isDocxExportEnabled() {
-    return docxExportEnabled;
+    return docx.enabled;
   }
 
   public void setDocxExportEnabled(boolean docxExportEnabled) {
-    this.docxExportEnabled = docxExportEnabled;
+    docx.enabled = docxExportEnabled;
   }
 
   public boolean isPdfExportEnabled() {
-    return pdfExportEnabled;
+    return pdf.enabled;
   }
 
   public void setPdfExportEnabled(boolean pdfExportEnabled) {
-    this.pdfExportEnabled = pdfExportEnabled;
+    pdf.enabled = pdfExportEnabled;
   }
 
   public boolean isCsvExportEnabled() {
-    return csvExportEnabled;
+    return csv.enabled;
   }
 
   public void setCsvExportEnabled(boolean csvExportEnabled) {
-    this.csvExportEnabled = csvExportEnabled;
+    csv.enabled = csvExportEnabled;
   }
 
   public boolean isAutoSizeColumns() {
@@ -1172,6 +1138,212 @@ public class GridExporter<T> implements Serializable {
       if (button instanceof HasEnabled) {
         getExporter().grid.getUI().ifPresent(ui -> ui.access(() -> ((HasEnabled) button).setEnabled(enabled)));
       }
+    }
+  }
+
+  /**
+   * Encapsulates all the concerns specific to a single export format (enabled state, tooltip,
+   * footer icon, writer creation, content type and file extension). {@link GridExporter} keeps one
+   * instance per built-in format and delegates the format-specific methods to it.
+   */
+  private abstract class FormatExporter implements Serializable {
+
+    boolean enabled = true;
+    String tooltipText;
+    SerializableConsumer<Tooltip> tooltipConfigurator;
+
+    FormatExporter(String defaultTooltipText) {
+      this.tooltipText = defaultTooltipText;
+    }
+
+    /** Creates the icon shown on the auto-attached export button. */
+    abstract Component createIcon();
+
+    /** The file extension (without the leading dot) used for the exported file. */
+    abstract String getFileExtension();
+
+    /** The MIME content type of the exported file. */
+    abstract String getContentType();
+
+    /** Creates the writer that produces the exported content. */
+    abstract BaseStreamResourceWriter<T> createWriter(String template);
+
+    /** The {@link DownloadHandler} that serves the exported file. */
+    abstract DownloadHandler getDownloadHandler(String template);
+
+    /** The (deprecated) {@link StreamResource} that serves the exported file. */
+    abstract StreamResource getStreamResource(String template);
+
+    /**
+     * The template configured through {@link GridExporter#createFor(Grid, String, String)}, used
+     * when the export buttons are auto-attached. {@code null} for formats without a template.
+     */
+    String getConfiguredTemplate() {
+      return null;
+    }
+
+    /** The download handler used by the auto-attached footer button. */
+    DownloadHandler createFooterDownloadHandler(Component button) {
+      return getDownloadHandler(getConfiguredTemplate());
+    }
+  }
+
+  /**
+   * A {@link FormatExporter} whose downloads are subject to the concurrent-download control
+   * (Excel, DOCX and PDF).
+   */
+  private abstract class ConcurrentFormatExporter extends FormatExporter {
+
+    ConcurrentFormatExporter(String defaultTooltipText) {
+      super(defaultTooltipText);
+    }
+
+    @Override
+    GridExporterConcurrentDownloadHandler getDownloadHandler(String template) {
+      return makeConcurrentDownloadHandler(
+          createWriter(template), getFileName(getFileExtension()), getContentType());
+    }
+
+    @Override
+    GridExporterStreamResource getStreamResource(String template) {
+      return new GridExporterStreamResource(
+          getFileName(getFileExtension()), makeConcurrentWriter(createWriter(template)));
+    }
+
+    @Override
+    DownloadHandler createFooterDownloadHandler(Component button) {
+      return getDownloadHandler(getConfiguredTemplate()).forComponent(button);
+    }
+  }
+
+  private final class ExcelFormatExporter extends ConcurrentFormatExporter {
+    ExcelFormatExporter() {
+      super("Export to Excel");
+    }
+
+    @Override
+    Component createIcon() {
+      return FontAwesome.Regular.FILE_EXCEL.create();
+    }
+
+    @Override
+    String getFileExtension() {
+      return "xlsx";
+    }
+
+    @Override
+    String getContentType() {
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    }
+
+    @Override
+    BaseStreamResourceWriter<T> createWriter(String template) {
+      return new ExcelStreamResourceWriter<>(GridExporter.this, template);
+    }
+
+    @Override
+    String getConfiguredTemplate() {
+      return excelCustomTemplate;
+    }
+  }
+
+  private final class DocxFormatExporter extends ConcurrentFormatExporter {
+    DocxFormatExporter() {
+      super("Export to Word");
+    }
+
+    @Override
+    Component createIcon() {
+      return FontAwesome.Regular.FILE_WORD.create();
+    }
+
+    @Override
+    String getFileExtension() {
+      return "docx";
+    }
+
+    @Override
+    String getContentType() {
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    }
+
+    @Override
+    BaseStreamResourceWriter<T> createWriter(String template) {
+      return new DocxStreamResourceWriter<>(GridExporter.this, template);
+    }
+
+    @Override
+    String getConfiguredTemplate() {
+      return docxCustomTemplate;
+    }
+  }
+
+  private final class PdfFormatExporter extends ConcurrentFormatExporter {
+    PdfFormatExporter() {
+      super("Export to PDF");
+    }
+
+    @Override
+    Component createIcon() {
+      return FontAwesome.Regular.FILE_PDF.create();
+    }
+
+    @Override
+    String getFileExtension() {
+      return "pdf";
+    }
+
+    @Override
+    String getContentType() {
+      return "application/pdf";
+    }
+
+    @Override
+    BaseStreamResourceWriter<T> createWriter(String template) {
+      return new PdfStreamResourceWriter<>(GridExporter.this, template);
+    }
+
+    @Override
+    String getConfiguredTemplate() {
+      // PDF export reuses the DOCX template when the buttons are auto-attached.
+      return docxCustomTemplate;
+    }
+  }
+
+  private final class CsvFormatExporter extends FormatExporter {
+    CsvFormatExporter() {
+      super("Export to CSV");
+    }
+
+    @Override
+    Component createIcon() {
+      return FontAwesome.Regular.FILE_LINES.create();
+    }
+
+    @Override
+    String getFileExtension() {
+      return "csv";
+    }
+
+    @Override
+    String getContentType() {
+      return "text/csv";
+    }
+
+    @Override
+    BaseStreamResourceWriter<T> createWriter(String template) {
+      return new CsvStreamResourceWriter<>(GridExporter.this);
+    }
+
+    @Override
+    DownloadHandler getDownloadHandler(String template) {
+      return new StreamResourceWriterAdapter(
+          createWriter(template), getFileName(getFileExtension()), getContentType());
+    }
+
+    @Override
+    StreamResource getStreamResource(String template) {
+      return new StreamResource(getFileName(getFileExtension()), createWriter(template));
     }
   }
 
