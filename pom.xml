@@ -19,7 +19,7 @@
 		<drivers.dir>${project.basedir}/drivers</drivers.dir>
 		<jetty.version>11.0.26</jetty.version>
 		<poi.version>5.2.3</poi.version>
-		<lombok.version>1.18.40</lombok.version>
+		<lombok.version>1.18.46</lombok.version>
 	</properties>
 
 	<organization>
