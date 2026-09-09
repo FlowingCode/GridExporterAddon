@@ -19,6 +19,7 @@
 		<drivers.dir>${project.basedir}/drivers</drivers.dir>
 		<jetty.version>11.0.26</jetty.version>
 		<poi.version>5.2.3</poi.version>
+		<docx4j.version>11.5.14</docx4j.version>
 		<lombok.version>1.18.46</lombok.version>
 	</properties>
 
@@ -148,12 +149,12 @@
 		<dependency>
 		    <groupId>org.docx4j</groupId>
 		    <artifactId>docx4j-JAXB-ReferenceImpl</artifactId>
-		    <version>11.5.14</version>
+		    <version>${docx4j.version}</version>
 		</dependency>
 		<dependency>
 	    <groupId>org.docx4j</groupId>
 	    <artifactId>docx4j-JAXB-MOXy</artifactId>
-	    <version>11.5.14</version>
+	    <version>${docx4j.version}</version>
 	    <exclusions>
 	        <exclusion>
 	            <groupId>com.sun.xml.bind</groupId>
@@ -164,7 +165,7 @@
 		<dependency>
 		    <groupId>org.docx4j</groupId>
 		    <artifactId>docx4j-export-fo</artifactId>
-		    <version>11.5.14</version>
+		    <version>${docx4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
